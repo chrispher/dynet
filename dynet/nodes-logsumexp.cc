@@ -10,8 +10,6 @@ namespace dynet {
 
 #define MAX_LOG_SUM_EXP 65536
 
-#ifndef __CUDACC__
-
 string LogSumExp::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "log(exp " << arg_names[0];
@@ -30,8 +28,6 @@ Dim LogSumExp::dim_forward(const vector<Dim>& xs) const {
   }
   return d;
 }
-
-#endif
 
 template<class MyDevice>
 void LogSumExp::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -100,8 +96,6 @@ DYNET_NODE_INST_DEV_IMPL(LogSumExp)
 
 #define MAX_LOG_SUM_EXP 65536
 
-#ifndef __CUDACC__
-
 string LogSumExpDimension::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "logsumexp_dim(" << arg_names[0] << ", " << dimension << ")";
@@ -118,8 +112,6 @@ Dim LogSumExpDimension::dim_forward(const vector<Dim>& xs) const {
     d.delete_dim(dimension);
   return d;
 }
-
-#endif
 
 template<class MyDevice>
 void LogSumExpDimension::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

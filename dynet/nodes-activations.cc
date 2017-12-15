@@ -9,9 +9,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Rectify *************
-
-#ifndef __CUDACC__
-
 string Rectify::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "ReLU(" << arg_names[0] << ')';
@@ -22,8 +19,6 @@ Dim Rectify::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Rectify");
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Rectify::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -43,9 +38,6 @@ void Rectify::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Rectify)
 
 // ************* LogisticSigmoid *************
-
-#ifndef __CUDACC__
-
 string LogisticSigmoid::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "\\sigma(" << arg_names[0] << ')';
@@ -56,8 +48,6 @@ Dim LogisticSigmoid::dim_forward(const vector<Dim>& xs) const {
   DYNET_ASSERT(xs.size() == 1, "Failed input count check in LogisticSigmoid")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void LogisticSigmoid::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -77,9 +67,6 @@ void LogisticSigmoid::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(LogisticSigmoid)
 
 // ************* SoftSign *************
-
-#ifndef __CUDACC__
-
 string SoftSign::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "softsign(" << arg_names[0] << ')';
@@ -91,8 +78,6 @@ Dim SoftSign::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(LooksLikeVector(xs[0]), "Bad input dimensions in SoftSign: " << xs);
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void SoftSign::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -112,9 +97,6 @@ void SoftSign::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(SoftSign)
 
 // ************* Erf *************
-
-#ifndef __CUDACC__
-
 string Erf::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "erf(" << arg_names[0] << ')';
@@ -125,8 +107,6 @@ Dim Erf::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Erf")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Erf::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -145,9 +125,6 @@ void Erf::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Erf)
 
 // ************* ExponentialLinearUnit *************
-
-#ifndef __CUDACC__
-
 string ExponentialLinearUnit::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "ELU(" << arg_names[0] << ", lambda=" << lambda << ", alpha=" << alpha << ')';
@@ -158,8 +135,6 @@ Dim ExponentialLinearUnit::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in ExponentialLinearUnit");
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void ExponentialLinearUnit::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -179,9 +154,6 @@ void ExponentialLinearUnit::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(ExponentialLinearUnit)
 
 // ************* SigmoidLinearUnit *************
-
-#ifndef __CUDACC__
-
 string SigmoidLinearUnit::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << arg_names[0] << "*\\sigma(" << arg_names[0] << "*beta), beta=" << beta << ')';
@@ -192,8 +164,6 @@ Dim SigmoidLinearUnit::dim_forward(const vector<Dim>& xs) const {
   DYNET_ASSERT(xs.size() == 1, "Failed input count check in SigmoidLinearUnit")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void SigmoidLinearUnit::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

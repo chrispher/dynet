@@ -7,9 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* WeightNormalization *************
-
-#ifndef __CUDACC__
-
 string WeightNormalization::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "weight_norm(" << arg_names[0] << ", " << arg_names[1] << ')';
@@ -21,8 +18,6 @@ Dim WeightNormalization::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(1 == xs[1].size()," Size of gain parameter in WeightNormalization should be 1, received " << xs[1].size());
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void WeightNormalization::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

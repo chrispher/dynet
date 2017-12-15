@@ -10,16 +10,9 @@
 #include "dynet/nodes-macros.h"
 #include "third_party/eigen_pooling.h"
 
-#if HAVE_CUDA
-#include "dynet/cuda.h"
-#include "dynet/gpu-ops.h"
-#endif
-
 using namespace std;
 
 namespace dynet {
-
-#ifndef __CUDACC__
 
 string MaxPooling2D::as_string(const vector<string>& arg_names) const {
   ostringstream s;
@@ -58,23 +51,12 @@ Dim MaxPooling2D::dim_forward(const vector<Dim>& xs) const {
   return Dim(output_shape, bs);
 }
 
-#endif
-
 template<class MyDevice>
 void MaxPooling2D::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   DYNET_ASSERT(xs.size() == 1, "Failed dimension check in MaxPooling2D::forward, exactly one input");
   DYNET_ASSERT(fx.d.bd == xs[0]->d.bd, "Failed dimension check in MaxPooling2D::forward, batchsize not match");
   DYNET_ASSERT(fx.d[2] == xs[0]->d[2], "Failed dimension check in MaxPooling2D::forward, #channel not match");
   AlignedMemoryPool* scratch_allocator = default_device->pools[(int)DeviceMempool::SCS];
-#ifdef __CUDACC__
-#if HAVE_CUDNN
-  if (cudnn_maxpool_op_ == NULL)
-    cudnn_maxpool_op_ = new CudnnMaxPooling2DOp(ksize, stride, is_valid);
-  cudnn_maxpool_op_->forward_impl(dev, xs, fx);
-#else
-  throw std::runtime_error("MaxPooling2D::forward_dev_impl not supported without CUDNN");
-#endif
-#else
   Eigen::PaddingType padding_type = is_valid ? Eigen::PADDING_VALID : Eigen::PADDING_SAME;
   // convert x from HWCN to CHWN
   void* CHWN_x_mem = scratch_allocator->allocate(xs[0]->d.size() * sizeof(float));
@@ -89,7 +71,6 @@ void MaxPooling2D::forward_dev_impl(const MyDevice & dev, const vector<const Ten
   // convert y from CHWN to HWCN
   shuffles[0] = 1; shuffles[1] = 2; shuffles[2] = 0; shuffles[3] = 3;
   fx.tb<3>().device(*dev.edevice) = CHWN_y.tb<3>().shuffle(shuffles);
-#endif
   scratch_allocator->free();
 }
 
@@ -103,15 +84,6 @@ void MaxPooling2D::backward_dev_impl(const MyDevice & dev,
   DYNET_ASSERT(dEdf.d == fx.d, "Failed dimension check in MaxPooling2D::backward");
   DYNET_ASSERT(dEdxi.d == xs[i]->d, "Failed dimension check in MaxPooling2D::backward");
   DYNET_ASSERT(i == 0, "Failed dimension check in MaxPooling2D::backward: i must be 0");
-#ifdef __CUDACC__
-#if HAVE_CUDNN
-  if (cudnn_maxpool_op_ == NULL)
-    cudnn_maxpool_op_ = new CudnnMaxPooling2DOp(ksize, stride, is_valid);
-  cudnn_maxpool_op_->backward_impl(dev, xs, fx, dEdf, i, dEdxi);
-#else
-  throw std::runtime_error("MaxPooling2D::backward_dev_impl not supported without CUDNN");
-#endif
-#else
   int pad_along_height = ((fx.d[0] - 1) * stride[0] +
                   ksize[0] - xs[0]->d[0]);
   int pad_along_width = ((fx.d[1] - 1) * stride[1] +
@@ -145,7 +117,6 @@ void MaxPooling2D::backward_dev_impl(const MyDevice & dev,
       }
     }
   }
-#endif
 }
 DYNET_NODE_INST_DEV_IMPL(MaxPooling2D)
 

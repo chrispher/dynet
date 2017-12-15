@@ -7,9 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Constant *************
-
-#ifndef __CUDACC__
-
 string Constant::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "constant(" << dim << ',' << value << ')';
@@ -19,8 +16,6 @@ string Constant::as_string(const vector<string>& arg_names) const {
 Dim Constant::dim_forward(const vector<Dim>& xs) const {
   return dim;
 }
-
-#endif
 
 template<class MyDevice>
 void Constant::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

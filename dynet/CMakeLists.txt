@@ -73,8 +73,6 @@ set(dynet_library_HDRS
     aligned-mem-pool.h
     c2w.h
     cfsm-builder.h
-    cuda.h
-    cudnn-ops.h
     deep-lstm.h
     devices.h
     dict.h
@@ -87,8 +85,6 @@ set(dynet_library_HDRS
     fast-lstm.h
     functors.h
     globals.h
-    gpu-kernels.h
-    gpu-ops.h
     grad-check.h
     graph.h
     gru.h
@@ -190,11 +186,6 @@ set(dynet_gpu_mergeable_SRCS
     training
     model)
 
-set(dynet_gpu_SRCS
-    cuda.cc
-    cudnn-ops.cu
-    gpu-ops.cu)
-
 file(GLOB TEST_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tests/*.cc)
 if (NOT MSVC)
   set(BUILD_SHARED_LIBS ON)
@@ -219,79 +210,9 @@ endif()
 #     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests.bin
 #     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tests.bin/${testName} )
 #endforeach(test_src)
-
-if(WITH_CUDA_BACKEND)
-  if(${GPU_NUMFILES} EQUAL 0)
-    foreach(FILENAME ${dynet_gpu_mergeable_SRCS})
-      set(MERGEFILE ${PROJECT_BINARY_DIR}/dynet/gpu-${FILENAME}.cu)
-      file(WRITE ${MERGEFILE} "#include \"${PROJECT_SOURCE_DIR}/dynet/${FILENAME}.cc\"\n")
-      list(APPEND dynet_gpu_SRCS ${MERGEFILE})
-    endforeach()
-  else()
-    # merge into k merge files
-    set(COUNTER 0)
-    foreach(FILENAME ${dynet_gpu_mergeable_SRCS})
-      math(EXPR MERGENUM "${COUNTER} % ${GPU_NUMFILES}")
-      set(MERGEFILE ${PROJECT_BINARY_DIR}/dynet/gpu-merge${MERGENUM}.cu)
-      if(${COUNTER} EQUAL ${MERGENUM})   # This is the first line of this merge file
-        file(REMOVE ${MERGEFILE})        # Start with an empty file
-        list(APPEND dynet_gpu_SRCS ${MERGEFILE})
-      endif()
-      file(APPEND ${MERGEFILE} "#include \"${PROJECT_SOURCE_DIR}/dynet/${FILENAME}.cc\"\n")
-      math(EXPR COUNTER ${COUNTER}+1)
-    endforeach()
-  endif()
-
-  # cuda flags
-  set(CUDA_SEPARABLE_COMPILATION ON)
-
-  if(CUDA_ARCH)
-    list(APPEND CUDA_NVCC_FLAGS "-arch=sm_${CUDA_ARCH};-std=c++11;-DVERBOSE;-DEIGEN_USE_GPU;-DHAVE_CUDA;-D_FORCE_INLINES")
-  else()
-    list(APPEND CUDA_NVCC_FLAGS "-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_52,code=sm_52;-gencode;arch=compute_52,code=compute_52;-std=c++11;-DVERBOSE;-DEIGEN_USE_GPU;-DHAVE_CUDA;-D_FORCE_INLINES")
-  endif()
-  if(CUDNN_FOUND)
-    list(APPEND CUDA_NVCC_FLAGS "-DHAVE_CUDNN")
-  endif()
-  if(CMAKE_COMPILER_IS_GNUCXX)
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 4.9)
-      # gcc 4.9 or later versions raise SEGV due to the optimization problem.
-      # Use -O1 instead for now.
-      list(APPEND CUDA_NVCC_FLAGS "-O1")
-    else()
-      list(APPEND CUDA_NVCC_FLAGS "-O2")
-    endif()
-  else()
-    list(APPEND CUDA_NVCC_FLAGS "-O2")
-  endif()
-  if(MSVC)
-    # If MSVC, we need the boost flag because nvcc doesn't properly parse part of the boost template definitions
-    list(APPEND CUDA_NVCC_FLAGS "-DBOOST_NO_CXX11_ALLOCATOR")
-    list(APPEND CUDA_NVCC_FLAGS_DEBUG "--compiler-options \"/MDd\"")
-    list(APPEND CUDA_NVCC_FLAGS_RELEASE "--compiler-options \"/MD\"")
-    SET(CUDA_PROPAGATE_HOST_FLAGS OFF)
-    cuda_add_library(dynet ${dynet_library_SRCS} ${dynet_library_HDRS} ${dynet_gpu_SRCS})
-  else()
-    SET(CUDA_PROPAGATE_HOST_FLAGS OFF)
-    cuda_add_library(dynet ${dynet_library_SRCS} ${dynet_library_HDRS} ${dynet_gpu_SRCS} OPTIONS --compiler-options "-fPIC")
-  endif()
-  set_target_properties(dynet PROPERTIES
-                        COMPILE_DEFINITIONS HAVE_CUDA)
-  if(CUDNN_FOUND)
-    target_compile_definitions(dynet PRIVATE HAVE_CUDNN)
-  endif()
-  cuda_add_cublas_to_target(dynet)
-  target_link_libraries(dynet ${LIBS})
-else()
-  # Build cpu library
-  add_library(dynet ${dynet_library_SRCS} ${dynet_library_HDRS})
-  target_link_libraries(dynet ${LIBS})
-endif(WITH_CUDA_BACKEND)
+add_library(dynet ${dynet_library_SRCS} ${dynet_library_HDRS})
+target_link_libraries(dynet ${LIBS})
 
 install(FILES ${dynet_library_HDRS} DESTINATION include/dynet)
 install(TARGETS dynet DESTINATION lib)
-if(WITH_CUDA_BACKEND)
-  install(TARGETS dynet DESTINATION lib)
-endif(WITH_CUDA_BACKEND)
-
 # target_compile_features(dynet PRIVATE cxx_range_for)

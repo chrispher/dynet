@@ -17,19 +17,8 @@
 #include "dynet/aligned-mem-pool.h"
 #include "dynet/devices.h"
 
-#if HAVE_CUDA
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include "dynet/cuda.h"
-#endif
 
-// Following line is commented out because it causes errors with large nets (Antonis)
-//#define EIGEN_NO_MALLOC
-
-#ifndef __CUDACC__
 #include <Eigen/Eigen>
-#endif
-
 #include <unsupported/Eigen/CXX11/Tensor>
 
 namespace dynet {
@@ -189,12 +178,6 @@ struct Tensor {
       for (unsigned i = 0; i < s; ++i)
         if (std::isnan(v[i]) || std::isinf(v[i])) return false;
       return true;
-    } else {
-#if HAVE_CUDA
-      if (device->type == DeviceType::GPU) {
-        DYNET_NO_CUDA_IMPL_ERROR("is_valid()");
-      }
-#endif
     }
     return false;
   }

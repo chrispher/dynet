@@ -8,9 +8,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Concatenate *************
-
-#ifndef __CUDACC__
-
 string Concatenate::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   os << "concat({" << arg_names[0];
@@ -43,8 +40,6 @@ int Concatenate::autobatch_sig(const ComputationGraph &cg, SigMap &sm) const {
   for (auto arg:args) s.add_dim(cg.nodes[arg]->dim);
   return sm.get_idx(s);
 }
-
-#endif
 
 template<class MyDevice>
 void Concatenate::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -90,9 +85,6 @@ void Concatenate::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Concatenate)
 
 // ************* ConcatenateToBatch *************
-
-#ifndef __CUDACC__
-
 string ConcatenateToBatch::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   os << "concat_batch_elems(" << arg_names[0];
@@ -113,8 +105,6 @@ Dim ConcatenateToBatch::dim_forward(const vector<Dim>& xs) const {
   }
   return d;
 }
-
-#endif
 
 template<class MyDevice>
 void ConcatenateToBatch::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const { 

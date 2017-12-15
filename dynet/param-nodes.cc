@@ -7,16 +7,9 @@
 #include "dynet/nodes-macros.h"
 #include "dynet/weight-decay.h"
 
-#ifdef HAVE_CUDA
-#include "dynet/gpu-ops.h"
-#endif
-
 using namespace std;
 
 namespace dynet {
-
-#ifndef __CUDACC__
-
 string ConstParameterNode::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "const_parameters(" << dim << ") @ " << &params.get_storage();
@@ -173,8 +166,6 @@ void LookupNode::accumulate_grad(const Tensor& g) {
   }
 }
 
-#endif
-
 template<class MyDevice>
 void ConstParameterNode::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   DYNET_ASSERT(xs.size() == 0, "Failed dimension check in FUNCNAME");
@@ -227,9 +218,6 @@ DYNET_NODE_INST_DEV_IMPL(ParameterNode)
 template<class MyDevice>
 void InputNode::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   DYNET_ASSERT(xs.size() == 0, "Failed dimension check in FUNCNAME");
-#ifdef __CUDACC__
-  cudaMemcpyAsync(fx.v, &pdata->front(), dim.size() * sizeof(float), cudaMemcpyHostToDevice);
-#else
   // TODO memcpy is only necessary if pdata->front() points to an unaligned location
   // need to compute this value
   bool is_input_address_aligned = false;
@@ -238,7 +226,6 @@ void InputNode::forward_dev_impl(const MyDevice & dev, const vector<const Tensor
   } else {
     fx.v = const_cast<float*>(&pdata->front());
   }
-#endif
 }
 
 template<class MyDevice>
@@ -256,16 +243,8 @@ template<class MyDevice>
 void SparseInputNode::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   DYNET_ASSERT(xs.size() == 0, "Failed dimension check in FUNCNAME");
   fx.tvec().device(*dev.edevice) = fx.tvec().constant(defdata);
-#ifdef __CUDACC__
-  unsigned int* ids_ptr = (unsigned int*)aux_mem;
-  float* data_ptr = (float*)(ids_ptr + ids.size());
-  cudaMemcpyAsync(ids_ptr, &ids[0], ids.size() * sizeof(unsigned int), cudaMemcpyHostToDevice);
-  cudaMemcpyAsync(data_ptr, &data[0], data.size() * sizeof(float), cudaMemcpyHostToDevice);
-  dynet::gpu::dense_to_sparse_assign(ids.size(), ids_ptr, data_ptr, fx.v);
-#else
   for(size_t i = 0; i < ids.size(); ++i)
     fx.v[ids[i]] = data[i];
-#endif
 }
 
 template<class MyDevice>
@@ -282,11 +261,7 @@ DYNET_NODE_INST_DEV_IMPL(SparseInputNode)
 template<class MyDevice>
 void ScalarInputNode::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   DYNET_ASSERT(xs.size() == 0, "Failed dimension check in FUNCNAME");
-#ifdef __CUDACC__
-  cudaMemcpyAsync(fx.v, pdata, 1 * sizeof(float), cudaMemcpyHostToDevice);
-#else
   fx.v[0] = *pdata;
-#endif
 }
 
 template<class MyDevice>
@@ -313,17 +288,12 @@ void LookupNode::forward_dev_impl(const MyDevice & dev, const vector<const Tenso
     DYNET_ARG_CHECK(fx.d.batch_elems() == pindices->size(),
                             "In LookupNode, in index vector size (" << pindices->size() << ") "
                             "doesn't match batch size in expressions (" << fx.d.batch_elems() << ")");
-#ifdef __CUDACC__
-    CUDA_CHECK(cudaMemcpyAsync((unsigned*)aux_mem, &(*pindices)[0], fx.d.bd * sizeof(unsigned), cudaMemcpyHostToDevice));
-    dynet::gpu::sparse_to_dense_block_assign_and_multiply(fx.d.bd, (unsigned*)aux_mem, fx.d.batch_size(), params.current_weight_decay(), params.get_storage().all_values.v, fx.v);
-#else
     for (unsigned b = 0; b < pindices->size(); ++b) {
       unsigned i = pindices->at(b);
       DYNET_ARG_CHECK(i < params.get_storage().values.size(),
                               "Out-of-bounds attempt to access index " << i << " for LookupParameter of size " << params.get_storage().values.size());
       fx.tb<2>().chip<2>(b).device(*dev.edevice) = params.get_storage().values[i].t<2>() * params.current_weight_decay();
     }
-#endif
   }
 }
 

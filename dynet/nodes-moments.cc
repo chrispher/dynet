@@ -8,9 +8,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Average *************
-
-#ifndef __CUDACC__
-
 string Average::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "average(" << arg_names[0];
@@ -29,8 +26,6 @@ Dim Average::dim_forward(const vector<Dim>& xs) const {
   }
   return d;
 }
-
-#endif
 
 template<class MyDevice>
 void Average::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -65,20 +60,13 @@ void Average::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>
     else {
       // Not all the same batch size, so need to broadcast in the cases where they differ
       TensorTools::zero(fx);
-#ifdef __CUDACC__
-      Eigen::array<int, 2> bcast({ 1, (int)fx.d.bd });
-#endif
       for (unsigned i = 0; i < num_args; ++i) {
         if (xs[i]->d.bd == fx.d.bd) {
           fx.tvec().device(*dev.edevice) += xs[i]->tvec();
         }
         else {
-#ifdef __CUDACC__
-          fx.tbvec().device(*dev.edevice) += xs[i]->tbvec().broadcast(bcast);
-#else
           for (unsigned b = 0; b < fx.d.bd; ++b)
             fx.tbvec().chip<1>(b).device(*dev.edevice) += xs[i]->tvec();
-#endif
         }
       }
     }
@@ -98,9 +86,6 @@ void Average::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Average)
 
 // ************* AverageColumns *************
-
-#ifndef __CUDACC__
-
 string AverageColumns::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "average_cols(matrix=" << arg_names[0] << ')';
@@ -113,22 +98,12 @@ Dim AverageColumns::dim_forward(const vector<Dim>& xs) const {
   return Dim({xs[0].rows()}, bd);
 }
 
-#endif
-
 template<class MyDevice>
 void AverageColumns::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   DYNET_ASSERT(xs.size() == 1, "Failed input count check in AverageColumns");
   unsigned cols = xs[0]->d.cols();
-#ifdef __CUDACC__
-  // The reduction used on CPU is better, but not implemented in GPU
-  fx.t<1>().device(*dev.edevice) = xs[0]->t<2>().chip<1>(0);
-  for(unsigned i = 1; i < cols; ++i)
-    fx.t<1>().device(*dev.edevice) += xs[0]->t<2>().chip<1>(i);
-  fx.t<1>().device(*dev.edevice) = fx.t<1>() / (float)cols;
-#else
   const Eigen::array<Eigen::DenseIndex, 1> reduction_axis = {1};
   fx.t<1>().device(*dev.edevice) = xs[0]->t<2>().sum(reduction_axis) / (float)cols;
-#endif
 }
 
 template<class MyDevice>
@@ -144,9 +119,6 @@ void AverageColumns::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(AverageColumns)
 
 // ************* MomentElements *************
-
-#ifndef __CUDACC__
-
 string MomentElements::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "moment_elems( expression=" << arg_names[0] << ", order=" << order << " )";
@@ -158,8 +130,6 @@ Dim MomentElements::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(order>= 1, "Order of moment should be >=1 in MomentElements (recieved "<<order<<")")
   return Dim({1}, xs[0].bd);
 }
-
-#endif
 
 template<class MyDevice>
 void MomentElements::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -194,9 +164,6 @@ void MomentElements::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(MomentElements)
 
 // ************* MomentDimension *************
-
-#ifndef __CUDACC__
-
 string MomentDimension::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "moment_dim(expression=" << arg_names[0] << ',';
@@ -219,8 +186,6 @@ Dim MomentDimension::dim_forward(const vector<Dim>& xs) const {
   ret.delete_dims(dims, include_batch_dim);
   return ret;
 }
-
-#endif
 
 template<class MyDevice>
 void MomentDimension::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -354,9 +319,6 @@ void MomentDimension::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(MomentDimension)
 
 // ************* MomentBatches *************
-
-#ifndef __CUDACC__
-
 string MomentBatches::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "moment_batches( expression=" << arg_names[0] << ", order=" << order << " )";
@@ -368,8 +330,6 @@ Dim MomentBatches::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(order>= 1, "Order of moment should be >=1 in MomentBatches (recieved "<<order<<")")
   return xs[0].single_batch();
 }
-
-#endif
 
 template<class MyDevice>
 void MomentBatches::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -404,9 +364,6 @@ void MomentBatches::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(MomentBatches)
 
 // ************* StdElements *************
-
-#ifndef __CUDACC__
-
 string StdElements::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "std_elems( expression=" << arg_names[0] << " )";
@@ -417,8 +374,6 @@ Dim StdElements::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in StdElements")
   return Dim({1}, xs[0].bd);
 }
-
-#endif
 
 template<class MyDevice>
 void StdElements::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -448,9 +403,6 @@ void StdElements::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(StdElements)
 
 // ************* StdDimension *************
-
-#ifndef __CUDACC__
-
 string StdDimension::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "std_dim(expression=" << arg_names[0] << ',';
@@ -472,8 +424,6 @@ Dim StdDimension::dim_forward(const vector<Dim>& xs) const {
   ret.delete_dims(dims, include_batch_dim);
   return ret;
 }
-
-#endif
 
 template<class MyDevice>
 void StdDimension::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -601,9 +551,6 @@ DYNET_NODE_INST_DEV_IMPL(StdDimension)
 
 
 // ************* StdBatches *************
-
-#ifndef __CUDACC__
-
 string StdBatches::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "std_batches( expression=" << arg_names[0] << " )";
@@ -615,8 +562,6 @@ Dim StdBatches::dim_forward(const vector<Dim>& xs) const {
  
   return xs[0].single_batch();
 }
-
-#endif
 
 template<class MyDevice>
 void StdBatches::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

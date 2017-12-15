@@ -8,9 +8,6 @@ using namespace std;
 namespace dynet {
 
 // ************* PairwiseRankLoss *************
-
-#ifndef __CUDACC__
-
 string PairwiseRankLoss::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   os << "max(0, " << margin << " - " << arg_names[0] << " + " << arg_names[1] << ')';
@@ -25,8 +22,6 @@ Dim PairwiseRankLoss::dim_forward(const vector<Dim>& xs) const {
                           "Bad input dimensions in PairwiseRankLoss: " << xs);
   return xs[0].bd >= xs[1].bd ? xs[0] : xs[1];
 }
-
-#endif
 
 template<class MyDevice>
 void PairwiseRankLoss::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -49,9 +44,6 @@ void PairwiseRankLoss::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(PairwiseRankLoss)
 
 // ************* BinaryLogLoss *************
-
-#ifndef __CUDACC__
-
 string BinaryLogLoss::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   os << "binary_log_loss(" << arg_names[0] << ", " << arg_names[1] << ')';
@@ -64,8 +56,6 @@ Dim BinaryLogLoss::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs[0].bd == xs[1].bd, "BinaryLogLoss with unmatched batches is not implemented yet (pull requests welcome): " << xs);
   return Dim({1}, max(xs[0].bd, xs[1].bd));
 }
-
-#endif
 
 template<class MyDevice>
 void BinaryLogLoss::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -84,9 +74,6 @@ void BinaryLogLoss::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(BinaryLogLoss)
 
 // ************* PoissonRegressionLoss *************
-
-#ifndef __CUDACC__
-
 string PoissonRegressionLoss::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "-log Poisson(" << pty << "; lambda=\\exp" << arg_names[0] << ')';
@@ -97,8 +84,6 @@ Dim PoissonRegressionLoss::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1 && xs[0].size() == 1, "Bad input dimensions in PoissonRegressionLoss: " << xs);
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void PoissonRegressionLoss::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

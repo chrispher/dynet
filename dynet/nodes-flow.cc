@@ -7,9 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Reshape *************
-
-#ifndef __CUDACC__
-
 string Reshape::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "reshape(" << arg_names[0] << " --> " << to << ')';
@@ -28,8 +25,6 @@ Dim Reshape::dim_forward(const vector<Dim>& xs) const {
     return ret;
   }
 }
-
-#endif
 
 template<class MyDevice>
 void Reshape::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -51,9 +46,6 @@ void Reshape::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Reshape)
 
 // ************* Identity *************
-
-#ifndef __CUDACC__
-
 string Identity::as_string(const vector<string>& arg_names) const {
   return arg_names[0];
 }
@@ -62,8 +54,6 @@ Dim Identity::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Identity")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Identity::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -82,9 +72,6 @@ void Identity::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Identity)
 
 // ************* NoBackprop *************
-
-#ifndef __CUDACC__
-
 string NoBackprop::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "nobackprop(" << arg_names[0] << ')';
@@ -95,8 +82,6 @@ Dim NoBackprop::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in NoBackprop")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void NoBackprop::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -115,9 +100,6 @@ void NoBackprop::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(NoBackprop)
 
 // ************* FlipGradient *************
-
-#ifndef __CUDACC__
-
 string FlipGradient::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "flip_gradient(" << arg_names[0] << ')';
@@ -128,8 +110,6 @@ Dim FlipGradient::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in FlipGradient");
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void FlipGradient::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

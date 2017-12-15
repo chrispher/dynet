@@ -9,11 +9,6 @@
 #include <random>
 #include <cmath>
 
-#if HAVE_CUDA
-#include "dynet/cuda.h"
-#include <device_launch_parameters.h>
-#endif
-
 using namespace std;
 
 namespace dynet {
@@ -21,9 +16,6 @@ namespace dynet {
 DynetParams::DynetParams() : random_seed(0), mem_descriptor("512"), weight_decay(0), autobatch(0), profiling(0),
   shared_parameters(false), ngpus_requested(false), ids_requested(false), cpu_requested(false), requested_gpus(-1)
 {
-#if HAVE_CUDA
-  gpu_mask = std::vector<int>(MAX_GPUS, 0);
-#endif
 }
 
 DynetParams::~DynetParams()
@@ -42,12 +34,6 @@ DynetParams extract_dynet_params(int& argc, char**& argv, bool shared_parameters
   params.shared_parameters = shared_parameters;
 
   int argi = 1;
-
-#if HAVE_CUDA
-  params.gpu_mask = std::vector<int>(MAX_GPUS, 0);
-#endif
-
-
   while (argi < argc) {
     string arg = argv[argi];
 
@@ -99,21 +85,6 @@ DynetParams extract_dynet_params(int& argc, char**& argv, bool shared_parameters
       remove_args(argc, argv, argi, 2);
     }
 
-#if HAVE_CUDA
-    else if (arg == "--dynet-gpus" || arg == "--dynet_gpus") {
-      if ((argi + 1) > argc) {
-        throw std::invalid_argument("[dynet] --dynet-gpus expects an argument (number of GPUs to use)");
-      } else {
-        if (params.ngpus_requested)
-          throw std::invalid_argument("Multiple instances of --dynet-gpus");
-        params.ngpus_requested = true;
-        string a2 = argv[argi + 1];
-        istringstream c(a2); c >> params.requested_gpus;
-        remove_args(argc, argv, argi, 2);
-      }
-    }
-#endif
-
     else if (arg == "--dynet-devices" || arg == "--dynet_devices") {
       if ((argi + 1) >= argc) {
         throw std::invalid_argument("[dynet] --dynet-devices expects an argument (comma separated list of CPU and physical GPU ids to use)");
@@ -131,15 +102,7 @@ DynetParams extract_dynet_params(int& argc, char**& argv, bool shared_parameters
               throw std::invalid_argument("Bad argument to --dynet-devices");
             params.cpu_requested = true;
           } else if (startswith(devices_info, "GPU:")) {
-            int gpu_id = std::stoi(devices_info.substr(4, devices_info.size() - 4));
-            if (gpu_id >= 256) // MAX_GPUS
-              throw std::runtime_error("DyNet hard limit on maximum number of GPUs (MAX_GPUS) exceeded. If you need more, modify the code to raise this hard limit.");
-            params.gpu_mask[gpu_id] ++;
-            params.requested_gpus++;
-            if (params.gpu_mask[gpu_id] != 1) {
-              ostringstream oss; oss << "Bad argument to --dynet-devices: " << devices_info;
-              throw std::invalid_argument(oss.str());
-            }
+            throw std::runtime_error("DyNet not support GPU.");
           } else {
             throw std::invalid_argument("Bad argument to --dynet-devices");
           }
@@ -154,13 +117,6 @@ DynetParams extract_dynet_params(int& argc, char**& argv, bool shared_parameters
       argi++;
     }
   }
-
-#if HAVE_CUDA
-  // Check for conflict between the two ways of requesting GPUs
-  if (params.ids_requested && params.ngpus_requested)
-    throw std::invalid_argument("Use only --dynet_gpus or --dynet_gpu_ids, not both\n");
-#endif
-
   return params;
 }
 
@@ -171,17 +127,6 @@ void initialize(DynetParams& params) {
   }
 
   DeviceManager* device_manager = get_device_manager();
-
-  // initialize CUDA
-  vector<Device*> gpudevices;
-#if HAVE_CUDA
-  if (!(params.cpu_requested && (params.requested_gpus == -1))) {
-    cerr << "[dynet] initializing CUDA\n";
-    gpudevices = initialize_gpu(params);
-    for (auto gpu : gpudevices)
-      device_manager->add(gpu);
-  }
-#endif
 
   // Set random seed
   if (params.random_seed == 0) {
@@ -210,19 +155,9 @@ void initialize(DynetParams& params) {
   int default_index = 0;
 
   Device *d;
-  if (gpudevices.size()) {
-    d = new Device_CPU(device_manager->num_devices(), std::string("128"), params.shared_parameters);
-  } else {
-    d = new Device_CPU(device_manager->num_devices(), params.mem_descriptor, params.shared_parameters);
-  }
+  d = new Device_CPU(device_manager->num_devices(), params.mem_descriptor, params.shared_parameters);
   device_manager->add(d);
   default_device = device_manager->get(default_index);
-#if HAVE_CUDA
-  if (default_device->type == DeviceType::GPU) {
-    auto default_gpu_device = static_cast<Device_GPU *>(default_device);
-    CUDA_CHECK(cudaSetDevice(default_gpu_device->cuda_device_id));
-  }
-#endif
 
   // TODO these should be accessed through the relevant device and removed here
   kSCALAR_MINUSONE = default_device->kSCALAR_MINUSONE;

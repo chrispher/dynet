@@ -7,9 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Dropout *************
-
-#ifndef __CUDACC__
-
 string Dropout::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "dropout(" << arg_names[0] << ",p=" << p << ')';
@@ -24,8 +21,6 @@ Dim Dropout::dim_forward(const vector<Dim>& xs) const {
 size_t Dropout::aux_storage_size() const {
   return dim.size() * sizeof(float);
 }
-
-#endif
 
 template<class MyDevice>
 void Dropout::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -47,9 +42,6 @@ void Dropout::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Dropout)
 
 // ************* DropoutDim *************
-
-#ifndef __CUDACC__
-
 string DropoutDim::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "dropout_dim(" << arg_names[0] << ",p=" << p << ')';
@@ -66,8 +58,6 @@ Dim DropoutDim::dim_forward(const vector<Dim>& xs) const {
 size_t DropoutDim::aux_storage_size() const {
   return (dim.size() / dim[dimension]) * sizeof(float);
 }
-
-#endif
 
 template<class MyDevice>
 void DropoutDim::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -95,9 +85,6 @@ void DropoutDim::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(DropoutDim)
 
 // ************* DropoutBatch *************
-
-#ifndef __CUDACC__
-
 string DropoutBatch::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "dropout_batch(" << arg_names[0] << ",p=" << p << ')';
@@ -112,8 +99,6 @@ Dim DropoutBatch::dim_forward(const vector<Dim>& xs) const {
 size_t DropoutBatch::aux_storage_size() const {
   return dim.batch_elems() * sizeof(float);
 }
-
-#endif
 
 template<class MyDevice>
 void DropoutBatch::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -139,9 +124,6 @@ void DropoutBatch::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(DropoutBatch)
 
 // ************* BlockDropout *************
-
-#ifndef __CUDACC__
-
 string BlockDropout::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "block_dropout(" << arg_names[0] << ",dropout_probability=" << dropout_probability << ')';
@@ -157,8 +139,6 @@ size_t BlockDropout::aux_storage_size() const {
   // we just need to remember whether this entire block is turned on (1.0) or off (0.0)
   return 1 * sizeof(float);
 }
-
-#endif
 
 template<class MyDevice>
 void BlockDropout::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

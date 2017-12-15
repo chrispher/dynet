@@ -8,9 +8,6 @@ using namespace std;
 namespace dynet {
 
 // ************* DotProduct *************
-
-#ifndef __CUDACC__
-
 string DotProduct::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << arg_names[0] << "^T . " << arg_names[1];
@@ -23,8 +20,6 @@ Dim DotProduct::dim_forward(const vector<Dim>& xs) const {
                           "Bad arguments to DotProduct: " << xs);
   return Dim({1}, max(xs[0].bd, xs[1].bd));
 }
-
-#endif
 
 template<class MyDevice>
 void DotProduct::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -67,9 +62,6 @@ void DotProduct::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(DotProduct)
 
 // ************* HuberDistance *************
-
-#ifndef __CUDACC__
-
 string HuberDistance::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "|| " << arg_names[0] << " - " << arg_names[1] << " ||_H(" << d << ')';
@@ -83,8 +75,6 @@ Dim HuberDistance::dim_forward(const vector<Dim>& xs) const {
                           "Mismatched input dimensions in HuberDistance: " << xs);
   return Dim({1}, max(xs[0].bd, xs[1].bd));
 }
-
-#endif
 
 template<class MyDevice>
 void HuberDistance::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -105,9 +95,6 @@ void HuberDistance::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(HuberDistance)
 
 // ************* L1Distance *************
-
-#ifndef __CUDACC__
-
 string L1Distance::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "|| " << arg_names[0] << " - " << arg_names[1] << " ||_1";
@@ -121,8 +108,6 @@ Dim L1Distance::dim_forward(const vector<Dim>& xs) const {
                           "Mismatched input dimensions in L1Distance: " << xs);
   return Dim({1}, max(xs[0].bd, xs[1].bd));
 }
-
-#endif
 
 template<class MyDevice>
 void L1Distance::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -143,9 +128,6 @@ void L1Distance::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(L1Distance)
 
 // ************* SquaredEuclideanDistance *************
-
-#ifndef __CUDACC__
-
 string SquaredEuclideanDistance::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "|| " << arg_names[0] << " - " << arg_names[1] << " ||^2";
@@ -189,8 +171,6 @@ std::vector<int> SquaredEuclideanDistance::autobatch_concat(const ComputationGra
   }
   return ret;
 }
-
-#endif
 
 template<class MyDevice>
 void SquaredEuclideanDistance::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

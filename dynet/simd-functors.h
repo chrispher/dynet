@@ -1,10 +1,7 @@
 #ifndef DYNET_XFUNCTORS_H
 #define DYNET_XFUNCTORS_H
 
-#ifndef __CUDACC__
 #include <Eigen/Eigen>
-#endif
-
 #include "dynet/functors.h"
 
 // these functors are implemented to exploit Eigen's internal logic for doing
@@ -102,16 +99,12 @@ namespace dynet {
 template<typename Scalar> struct scalar_asinh_forward_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_asinh_forward_op)
   DYNET_DEVICE_FUNC inline const Scalar operator() (const Scalar& x) const {
-#ifndef __CUDACC__
     using std::asinh;
-#endif
     return asinh(x);
   }
   template <typename Packet>
   DYNET_DEVICE_FUNC inline Packet packetOp(const Packet& x) const {
-#ifndef __CUDACC__
     using std::asinh;
-#endif
     return asinh(x);
   }
 };
@@ -121,16 +114,12 @@ namespace dynet {
 template<typename Scalar> struct scalar_acosh_forward_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_acosh_forward_op)
   DYNET_DEVICE_FUNC inline const Scalar operator() (const Scalar& x) const {
-#ifndef __CUDACC__
     using std::acosh;
-#endif
     return acosh(x);
   }
   template <typename Packet>
   DYNET_DEVICE_FUNC inline Packet packetOp(const Packet& x) const {
-#ifndef __CUDACC__
     using std::acosh;
-#endif
     return acosh(x);
   }
 };
@@ -140,16 +129,12 @@ namespace dynet {
 template<typename Scalar> struct scalar_atanh_forward_op {
   EIGEN_EMPTY_STRUCT_CTOR(scalar_atanh_forward_op)
   DYNET_DEVICE_FUNC inline const Scalar operator() (const Scalar& x) const {
-#ifndef __CUDACC__
     using std::atanh;
-#endif
     return atanh(x);
   }
   template <typename Packet>
   DYNET_DEVICE_FUNC inline Packet packetOp(const Packet& x) const {
-#ifndef __CUDACC__
     using std::atanh;
-#endif
     return atanh(x);
   }
 };

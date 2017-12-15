@@ -7,9 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* SelectRows *************
-
-#ifndef __CUDACC__
-
 string SelectRows::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "select_rows(" << arg_names[0] << ", {rsize=" << prows->size() << "})";
@@ -23,8 +20,6 @@ Dim SelectRows::dim_forward(const vector<Dim>& xs) const {
   ret.d[0] = nrows;
   return ret;
 }
-
-#endif
 
 template<class MyDevice>
 void SelectRows::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -52,9 +47,6 @@ void SelectRows::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(SelectRows)
 
 // ************* SelectCols *************
-
-#ifndef __CUDACC__
-
 string SelectCols::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "select_cols(" << arg_names[0] << ", {csize=" << pcols->size() << "})";
@@ -68,8 +60,6 @@ Dim SelectCols::dim_forward(const vector<Dim>& xs) const {
   ret.d[1] = ncols;
   return ret;
 }
-
-#endif
 
 template<class MyDevice>
 void SelectCols::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -97,9 +87,6 @@ void SelectCols::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(SelectCols)
 
 // ************* PickElement *************
-
-#ifndef __CUDACC__
-
 string PickElement::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "pick(" << arg_names[0] << ',';
@@ -137,8 +124,6 @@ Dim PickElement::dim_forward(const vector<Dim>& xs) const {
   ret.delete_dim(dimension);
   return ret;
 }
-
-#endif
 
 // x_1 is a vector
 // y = (x_1)_{*pval}
@@ -192,9 +177,6 @@ void PickElement::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(PickElement)
 
 // ************* PickRange *************
-
-#ifndef __CUDACC__
-
 // x_1 is a vector
 // y = (x_1)[start:end]
 string PickRange::as_string(const vector<string>& arg_names) const {
@@ -219,8 +201,6 @@ int PickRange::autobatch_sig(const ComputationGraph & cg, SigMap &sm) const {
   s.add_node(end);
   return sm.get_idx(s);
 }
-
-#endif
 
 // x_1 is a matrix
 // y = (x_1)[start:end]
@@ -259,9 +239,6 @@ void PickRange::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(PickRange)
 
 // ************* PickBatchElements *************
-
-#ifndef __CUDACC__
-
 string PickBatchElements::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "pick_batch_elems(" << arg_names[0] << ',';
@@ -294,8 +271,6 @@ Dim PickBatchElements::dim_forward(const vector<Dim>& xs) const {
   }
   return ret;
 }
-
-#endif
 
 template<class MyDevice>
 void PickBatchElements::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -336,9 +311,6 @@ DYNET_NODE_INST_DEV_IMPL(PickBatchElements)
 
 
 // ************* StridedSelect *************
-
-#ifndef __CUDACC__
-
 string StridedSelect::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "StridedSelect(" << arg_names[0] << ',';
@@ -404,8 +376,6 @@ Dim StridedSelect::dim_forward(const vector<Dim>& xs) const {
   }
   return ret;
 }
-
-#endif
 
 template<class MyDevice>
 void StridedSelect::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

@@ -11,9 +11,6 @@ namespace dynet {
 
 
 // ************* LSTM Gates *************
-
-#ifndef __CUDACC__
-
   string VanillaLSTMGates::as_string(const vector<string>& arg_names) const {
     ostringstream s;
     s << "vanilla_lstm_gates(" << arg_names[0] << ", " << arg_names[1] << ", " << arg_names[2] << ", " << arg_names[3] << ", " << arg_names[4] << ')';
@@ -96,8 +93,6 @@ namespace dynet {
     return ret;
   }
 
-#endif
-
   template<class MyDevice>
   void VanillaLSTMGates::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
     // computes affine transforms + nonlinearity
@@ -141,16 +136,12 @@ namespace dynet {
     }
 
     //bias
-#ifdef __CUDACC__
-    Eigen::array<int, 3> bcast = {1, 1, (int)batch_size};
-    fx.tb<2>().device(*dev.edevice) = b->tb<2>().broadcast(bcast);
-#else
     float *curr_ptr = fx.v, *end_ptr = curr_ptr + fx.d.size(), *in_ptr = b->v;
     do {
       memcpy(curr_ptr, in_ptr, sizeof(float)*b->d[0]);
       curr_ptr += b->d[0];
     } while(curr_ptr != end_ptr);
-#endif
+
     fx.tbvec().slice(indices_f, sizes_1).device(*dev.edevice) += fx.tbvec().slice(indices_f, sizes_1).constant(forget_gate_bias);
 
     if(dropout){
@@ -159,16 +150,11 @@ namespace dynet {
         mask_x.v = xs[num_inputs+4]->v;
       } else {
         mask_x.v = static_cast<float*>(scratch_allocator->allocate(mask_x.d.size() * sizeof(float)));
-#ifdef __CUDACC__
-        Eigen::array<int, 2> bcast = {1, (int)batch_size};
-        mask_x.tbvec().device(*dev.edevice) = xs[num_inputs+4]->tbvec().broadcast(bcast);
-#else
         float *curr_ptr = mask_x.v, *end_ptr = curr_ptr + mask_x.d.size(), *in_ptr = xs[num_inputs+4]->v;
         do {
           memcpy(curr_ptr, in_ptr, sizeof(float)*xs[num_inputs+4]->d[0]);
           curr_ptr += xs[num_inputs+4]->d[0];
         } while(curr_ptr != end_ptr);
-#endif
       }
       Tensor x_t_dropped(Dim({input_dim}, batch_size), nullptr, fx.device, fx.mem_pool);
       x_t_dropped.v = static_cast<float*>(scratch_allocator->allocate(x_t_dropped.d.size() * sizeof(float)));
@@ -180,16 +166,11 @@ namespace dynet {
         mask_h.v = xs[num_inputs+5]->v;
       } else {
         mask_h.v = static_cast<float*>(scratch_allocator->allocate(mask_h.d.size() * sizeof(float)));
-#ifdef __CUDACC__
-        Eigen::array<int, 2> bcast = {1, (int)batch_size};
-        mask_h.tbvec().device(*dev.edevice) = xs[num_inputs+5]->tbvec().broadcast(bcast);
-#else
         float *curr_ptr = mask_h.v, *end_ptr = curr_ptr + mask_h.d.size(), *in_ptr = xs[num_inputs+5]->v;
         do {
           memcpy(curr_ptr, in_ptr, sizeof(float)*xs[num_inputs+5]->d[0]);
           curr_ptr += xs[num_inputs+5]->d[0];
         } while(curr_ptr != end_ptr);
-#endif
       }
       Tensor h_tm1_dropped(Dim({hidden_dim}, batch_size), nullptr, fx.device, fx.mem_pool);
       h_tm1_dropped.v = static_cast<float*>(scratch_allocator->allocate(h_tm1_dropped.d.size() * sizeof(float)));
@@ -295,31 +276,21 @@ namespace dynet {
         mask_x.v = xs[num_inputs+4]->v;
       } else {
         mask_x.v = static_cast<float*>(scratch_allocator->allocate(mask_x.d.size() * sizeof(float)));
-#ifdef __CUDACC__
-        Eigen::array<int, 2> bcast = {1, (int)batch_size};
-        mask_x.tbvec().device(*dev.edevice) = xs[num_inputs+4]->tbvec().broadcast(bcast);
-#else
         float *curr_ptr = mask_x.v, *end_ptr = curr_ptr + mask_x.d.size(), *in_ptr = xs[num_inputs+4]->v;
         do {
           memcpy(curr_ptr, in_ptr, sizeof(float)*xs[num_inputs+4]->d[0]);
           curr_ptr += xs[num_inputs+4]->d[0];
         } while(curr_ptr != end_ptr);
-#endif
       }
       if(xs[num_inputs+5]->d.bd == batch_size){
         mask_h.v = xs[num_inputs+5]->v;
       } else {
         mask_h.v = static_cast<float*>(scratch_allocator->allocate(mask_h.d.size() * sizeof(float)));
-#ifdef __CUDACC__
-        Eigen::array<int, 2> bcast = {1, (int)batch_size};
-        mask_h.tbvec().device(*dev.edevice) = xs[num_inputs+5]->tbvec().broadcast(bcast);
-#else
         float *curr_ptr = mask_h.v, *end_ptr = curr_ptr + mask_h.d.size(), *in_ptr = xs[num_inputs+5]->v;
         do {
           memcpy(curr_ptr, in_ptr, sizeof(float)*xs[num_inputs+5]->d[0]);
           curr_ptr += xs[num_inputs+5]->d[0];
         } while(curr_ptr != end_ptr);
-#endif
       }
     }
 
@@ -380,7 +351,7 @@ namespace dynet {
         }
         dEdxi.tvec().device(*dev.edevice) += mult_y.tvec() * dropout_mask.tvec();
       } else {
-		    MatrixTranspMultiplyAcc(dev, Wx_slice, mult_r, dEdxi);
+        MatrixTranspMultiplyAcc(dev, Wx_slice, mult_r, dEdxi);
       }
     } else if(i==num_inputs){
       // dh_tm1 = [Wh_i]^T   [di . i_t . (1-i_t)]
@@ -530,9 +501,6 @@ namespace dynet {
 
 
   // ************* LSTM Cell *************
-
-#ifndef __CUDACC__
-
   string VanillaLSTMC::as_string(const vector<string>& arg_names) const {
     ostringstream s;
     s << "vanilla_lstm_c(" << arg_names[0] << ", " << arg_names[1] << ')';
@@ -557,8 +525,6 @@ namespace dynet {
   std::vector<int> VanillaLSTMC::autobatch_concat(const ComputationGraph & cg) const {
     return vector<int>(2, 1);
   }
-
-#endif
 
   template<class MyDevice>
   void VanillaLSTMC::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -618,9 +584,6 @@ namespace dynet {
   DYNET_NODE_INST_DEV_IMPL(VanillaLSTMC)
 
   // ************* LSTM State *************
-
-#ifndef __CUDACC__
-
   string VanillaLSTMH::as_string(const vector<string>& arg_names) const {
     ostringstream s;
     s << "vanilla_lstm_h(" << arg_names[0] << ", " << arg_names[1] << ')';
@@ -645,8 +608,6 @@ namespace dynet {
   std::vector<int> VanillaLSTMH::autobatch_concat(const ComputationGraph & cg) const {
     return vector<int>(2, 1);
   }
-
-#endif
 
   template<class MyDevice>
   void VanillaLSTMH::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

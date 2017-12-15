@@ -4,7 +4,6 @@
 #include <string>
 #include <unsupported/Eigen/CXX11/Tensor>
 
-#include "dynet/cuda.h"
 #include "dynet/dynet.h"
 #include "dynet/expr.h"
 #include "dynet/except.h"
@@ -86,40 +85,6 @@ void Device::allocate_tensor(DeviceMempool mp, Tensor & tens) {
   DYNET_ASSERT(tens.v != nullptr, "Allocated tensor is zero");
   tens.mem_pool = mp;
 }
-
-#if HAVE_CUDA
-Device_GPU::Device_GPU(int my_id, const DeviceMempoolSizes & mbs, int device_id) :
-  Device(my_id, DeviceType::GPU, &gpu_mem), cuda_device_id(device_id), gpu_mem(device_id) {
-  CUDA_CHECK(cudaSetDevice(device_id));
-  CUBLAS_CHECK(cublasCreate(&cublas_handle));
-  CUBLAS_CHECK(cublasSetPointerMode(cublas_handle, CUBLAS_POINTER_MODE_DEVICE));
-#if HAVE_CUDNN
-  CUDNN_CHECK(cudnnCreate(&cudnnHandle));
-#endif
-  kSCALAR_MINUSONE = (float*)gpu_mem.malloc(sizeof(float));
-  kSCALAR_ONE = (float*)gpu_mem.malloc(sizeof(float));
-  kSCALAR_ZERO = (float*)gpu_mem.malloc(sizeof(float));
-  name = "GPU:" + std::to_string(device_id);
-  float minusone = -1;
-  CUDA_CHECK(cudaMemcpyAsync(kSCALAR_MINUSONE, &minusone, sizeof(float), cudaMemcpyHostToDevice));
-  float one = 1;
-  CUDA_CHECK(cudaMemcpyAsync(kSCALAR_ONE, &one, sizeof(float), cudaMemcpyHostToDevice));
-  float zero = 0;
-  CUDA_CHECK(cudaMemcpyAsync(kSCALAR_ZERO, &zero, sizeof(float), cudaMemcpyHostToDevice));
-
-  // Initialize the Eigen device
-  estream = new Eigen::CudaStreamDevice(device_id);
-  edevice = new Eigen::GpuDevice(estream);
-
-  // this is the big memory allocation.
-  pools[0] = new AlignedMemoryPool("GPU forward memory", (mbs.used[0] << 20), &gpu_mem);
-  pools[1] = new AlignedMemoryPool("GPU backward memory", (mbs.used[1] << 20), &gpu_mem);
-  pools[2] = new AlignedMemoryPool("GPU parameter memory", (mbs.used[2] << 20), &gpu_mem);
-  pools[3] = new AlignedMemoryPool("GPU scratch memory", (mbs.used[3] << 20), &gpu_mem);
-}
-
-Device_GPU::~Device_GPU() {}
-#endif
 
 Device_CPU::Device_CPU(int my_id, const DeviceMempoolSizes & mbs, bool shared) :
   Device(my_id, DeviceType::CPU, &cpu_mem), shmem(mem) {

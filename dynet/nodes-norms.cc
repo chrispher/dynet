@@ -8,9 +8,6 @@ using namespace std;
 namespace dynet {
 
 // ************* SquaredNorm *************
-
-#ifndef __CUDACC__
-
 string SquaredNorm::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "|| " << arg_names[0] << " ||^2";
@@ -21,8 +18,6 @@ Dim SquaredNorm::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in SquaredNorm")
   return Dim({1}, xs[0].bd);
 }
-
-#endif
 
 template<class MyDevice>
 void SquaredNorm::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -45,9 +40,6 @@ void SquaredNorm::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(SquaredNorm)
 
 // ************* L2Norm *************
-
-#ifndef __CUDACC__
-
 string L2Norm::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "|| " << arg_names[0] << " ||";
@@ -58,8 +50,6 @@ Dim L2Norm::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in L2Norm")
   return Dim({1}, xs[0].bd);
 }
-
-#endif
 
 template<class MyDevice>
 void L2Norm::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

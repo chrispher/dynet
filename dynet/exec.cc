@@ -7,10 +7,6 @@
 #include "dynet/globals.h"
 #include "dynet/timing.h"
 
-#ifdef HAVE_CUDA
-#include "dynet/gpu-ops.h"
-#endif
-
 using namespace std;
 
 namespace dynet {
@@ -289,13 +285,6 @@ void BatchedExecutionEngine::combine_tensors(
   float* dest =
       static_cast<float*>(mempool->allocate(total_dsize * sizeof(float)));
 
-#if HAVE_CUDA
-  vector<CopyArgs> locs(batch_ids.size() * 3);
-  size_t i = 0;
-  size_t max_length = 0;
-  const size_t TRG = batch_ids.size();
-  const size_t LEN = batch_ids.size() * 2;
-#endif
   tout.v = dest;
   // copy
   for (const auto id : arg_nodes) {
@@ -304,32 +293,10 @@ void BatchedExecutionEngine::combine_tensors(
     float* my_src = batches[node2batch[id]].nfx.v + node2offset[id];
     if (tout.device->type == DeviceType::CPU) {
       memcpy(dest, my_src, sz * sizeof(float));
-    } else if (tout.device->type == DeviceType::GPU) {
-#if HAVE_CUDA
-      locs[i].ptr = my_src;
-      locs[i + TRG].ptr = dest;
-      locs[i + LEN].n = sz;
-      if (max_length < sz) max_length = sz;
-      i++;
-#endif
     } else { throw std::runtime_error("Bad device type"); }
     dest += sz; // pointer arith
   }
-  if (tout.device->type == DeviceType::GPU) {
-#if HAVE_CUDA
-    size_t req_sz = batch_ids.size() * 3 * sizeof(CopyArgs);
-    void* basemem = mempool->allocate(req_sz);
-    float** srcs = static_cast<float**>(basemem);
-    float** trgs = static_cast<float**>(basemem) + TRG;
-    std::size_t* lens = static_cast<std::size_t*>(basemem) + LEN;
-    CUDA_CHECK(cudaMemcpyAsync(basemem,
-                          &(locs)[0],
-                          locs.size() * sizeof(CopyArgs),
-                          cudaMemcpyHostToDevice,
-                          static_cast<Device_GPU*>(tout.device)->estream->stream()));
-    gpu::parallel_memcpy(batch_ids.size(), max_length, srcs, trgs, lens);
-#endif
-  } else if (tout.device->type == DeviceType::CPU) {
+  if (tout.device->type == DeviceType::CPU) {
     ; // Nothing more to do, memory was already copied.
   } else { throw std::runtime_error("Bad device type"); }
 }
@@ -350,37 +317,7 @@ void BatchedExecutionEngine::accumulate_tensors(
       tot_arg += node2size[my_aid];
     }
   } else {
-#if HAVE_CUDA
-    vector<CopyArgs> locs(batch_ids.size() * 3);
-    size_t i = 0;
-    size_t max_length = 0;
-    const size_t TRG = batch_ids.size();
-    const size_t LEN = batch_ids.size() * 2;
-    float* src = tin.v;
-    // copy
-    for (const auto id : batch_ids) {
-      const size_t sz = node2size[cg.nodes[id]->args[ai]];
-
-      locs[i].ptr = src; // src
-      locs[i + TRG].ptr = ndEdfs[cg.nodes[id]->args[ai]].v;
-      locs[i + LEN].n = sz;
-      if (max_length < sz) max_length = sz;
-      i++;
-      src += sz; // pointer arith
-    }
-    size_t req_sz = batch_ids.size() * 3 * sizeof(CopyArgs);
-    AlignedMemoryPool *mempool = tin.device->pools[(int)DeviceMempool::DEDFS];
-    void* basemem = mempool->allocate(req_sz);
-    float** srcs = static_cast<float**>(basemem);
-    float** trgs = static_cast<float**>(basemem) + TRG;
-    std::size_t* lens = static_cast<std::size_t*>(basemem) + LEN;
-    CUDA_CHECK(cudaMemcpyAsync(basemem,
-                          &(locs)[0],
-                          locs.size() * sizeof(CopyArgs),
-                          cudaMemcpyHostToDevice,
-                          static_cast<Device_GPU*>(tin.device)->estream->stream()));
-    gpu::parallel_accumulate(batch_ids.size(), max_length, srcs, trgs, lens);
-#endif
+    throw std::runtime_error("Bad device type"); 
   }
 }
 

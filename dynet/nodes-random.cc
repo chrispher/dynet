@@ -7,9 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* GaussianNoise *************
-
-#ifndef __CUDACC__
-
 string GaussianNoise::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << arg_names[0] << " + N(0," << stddev << ')';
@@ -20,8 +17,6 @@ Dim GaussianNoise::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in GaussianNoise")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void GaussianNoise::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -48,9 +43,6 @@ void GaussianNoise::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(GaussianNoise)
 
 // ************* RandomNormal *************
-
-#ifndef __CUDACC__
-
 string RandomNormal::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "random_normal(" << dim << ')';
@@ -60,8 +52,6 @@ string RandomNormal::as_string(const vector<string>& arg_names) const {
 Dim RandomNormal::dim_forward(const vector<Dim>& xs) const {
   return dim;
 }
-
-#endif
 
 template<class MyDevice>
 void RandomNormal::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -81,9 +71,6 @@ void RandomNormal::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(RandomNormal)
 
 // ************* RandomBernoulli *************
-
-#ifndef __CUDACC__
-
 string RandomBernoulli::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "random_bernoulli(" << dim << ", " << p << ')';
@@ -93,8 +80,6 @@ string RandomBernoulli::as_string(const vector<string>& arg_names) const {
 Dim RandomBernoulli::dim_forward(const vector<Dim>& xs) const {
   return dim;
 }
-
-#endif
 
 template<class MyDevice>
 void RandomBernoulli::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -114,9 +99,6 @@ void RandomBernoulli::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(RandomBernoulli)
 
 // ************* RandomUniform *************
-
-#ifndef __CUDACC__
-
 string RandomUniform::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "random_uniform(" << dim << ", " << left << ", " << right << ')';
@@ -126,8 +108,6 @@ string RandomUniform::as_string(const vector<string>& arg_names) const {
 Dim RandomUniform::dim_forward(const vector<Dim>& xs) const {
   return dim;
 }
-
-#endif
 
 template<class MyDevice>
 void RandomUniform::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -147,9 +127,6 @@ void RandomUniform::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(RandomUniform)
 
 // ************* RandomGumbel *************
-
-#ifndef __CUDACC__
-
 string RandomGumbel::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "random_gumbel(" << dim << ", " << mu << ", " << beta << ')';
@@ -159,8 +136,6 @@ string RandomGumbel::as_string(const vector<string>& arg_names) const {
 Dim RandomGumbel::dim_forward(const vector<Dim>& xs) const {
   return dim;
 }
-
-#endif
 
 template<class MyDevice>
 void RandomGumbel::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

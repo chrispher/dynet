@@ -11,19 +11,11 @@
 #include "third_party/eigen_spatial_convolutions.h"
 #include "third_party/eigen_backward_spatial_convolutions.h"
 
-#if HAVE_CUDA
-#include "dynet/cuda.h"
-#include "dynet/gpu-ops.h"
-#endif
-
 using namespace std;
 
 namespace dynet {
 
 // ************* Filter1DNarrow *************
-
-#ifndef __CUDACC__
-
 string Filter1DNarrow::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   os << "conv1d_narrow(" << arg_names[0] << ", f=" << arg_names[1] << ')';
@@ -46,8 +38,6 @@ Dim Filter1DNarrow::dim_forward(const vector<Dim>& xs) const {
   return Dim({fids, (unsigned)ocols});
 }
 
-#endif
-
 template<class MyDevice>
 void Filter1DNarrow::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   const Eigen::array<Eigen::DenseIndex, 2> dims = {0, 1};
@@ -61,9 +51,6 @@ void Filter1DNarrow::forward_dev_impl(const MyDevice & dev, const vector<const T
     Eigen::DSizes<ptrdiff_t, 2> sizes(1,ycols);
     for(unsigned fid = 0; fid < fids; ++fid) {
       indices[0] = fid;
-#if defined(__CUDACC__) && defined(EIGEN_NO_MALLOC)
-      throw std::runtime_error("CUDA memory allocation in Filter1DNarrow");
-#endif
       fx.t<2>().slice(indices, sizes).device(*dev.edevice) = xs[0]->t<2>().convolve(xs[1]->t<3>().chip<2>(fid), dims);
     }
   }
@@ -110,9 +97,6 @@ void Filter1DNarrow::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Filter1DNarrow)
 
 // ************* FoldRows *************
-
-#ifndef __CUDACC__
-
 string FoldRows::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   os << "fold_rows(" << arg_names[0] << ", nrows=" << nrows << ')';
@@ -127,8 +111,6 @@ Dim FoldRows::dim_forward(const vector<Dim>& xs) const {
   }
   return Dim({orows, xs[0].cols()});
 }
-
-#endif
 
 template<class MyDevice>
 void FoldRows::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -160,9 +142,6 @@ void FoldRows::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(FoldRows)
 
 // ************* KMaxPooling *************
-
-#ifndef __CUDACC__
-
 string KMaxPooling::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   os << "kmaxpool(" << arg_names[0] << ", k=" << k << ", d=" << pooled_dim << ')';
@@ -188,14 +167,8 @@ size_t KMaxPooling::aux_storage_size() const {
   return sizeof(Eigen::DenseIndex) * dim.size();
 }
 
-#endif
-
 template<class MyDevice>
 void KMaxPooling::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-#ifdef __CUDACC__
-    // TODO: The code that works on CPU does not compile on CUDA
-    throw std::runtime_error("KMaxPooling::forward_dev_impl not working on CUDA yet");
-#endif
   Eigen::DenseIndex* maxmap = static_cast<Eigen::DenseIndex*>(aux_mem);
   Eigen::TensorMap<Eigen::Tensor<Eigen::DenseIndex, 4>> locs(maxmap, dim[0], dim[1], dim[2], dim.batch_elems());
   const unsigned batch_size = dim.batch_elems();
@@ -244,13 +217,7 @@ void KMaxPooling::backward_dev_impl(const MyDevice & dev,
                              unsigned i,
                              Tensor& dEdxi) const {
   DYNET_ARG_CHECK(i == 0, "Failed dimension check in KMaxPooling::backward");
-#ifdef __CUDACC__
-  vector<Eigen::DenseIndex> indices(dim.size());
-  Eigen::DenseIndex* maxmap = &indices[0];
-  CUDA_CHECK(cudaMemcpy((void*)maxmap, aux_mem, sizeof(Eigen::DenseIndex) * dim.size(), cudaMemcpyDeviceToHost));
-#else
   Eigen::DenseIndex* maxmap = static_cast<Eigen::DenseIndex*>(aux_mem);
-#endif
   Eigen::TensorMap<Eigen::Tensor<Eigen::DenseIndex, 4>> locs(maxmap, dim[0], dim[1], dim[2], dim.batch_elems());
   const unsigned batch_size = dim.batch_elems();
   const unsigned first_dim_size = dim[first_dim];
@@ -277,9 +244,6 @@ void KMaxPooling::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(KMaxPooling)
 
 // ************* KMHNgram *************
-
-#ifndef __CUDACC__
-
 string KMHNGram::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "kmh-ngram(" << arg_names[0] << ')';
@@ -293,13 +257,8 @@ Dim KMHNGram::dim_forward(const vector<Dim>& xs) const {
   return Dim({xs[0][0], new_cols});
 }
 
-#endif
-
 template<class MyDevice>
 void KMHNGram::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("KMHNGram forward");
-#else
   auto x = **xs[0];
   const int new_cols = x.cols() - n + 1;
   DYNET_ASSERT(new_cols > 0, "Failed dimension check in KMHNGram");
@@ -310,7 +269,6 @@ void KMHNGram::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*
     for (unsigned k = 0; k < n; ++k)
       c_j += x.col(j + k);
   }
-#endif
 }
 
 template<class MyDevice>
@@ -320,21 +278,14 @@ void KMHNGram::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("KMHNGram backward");
-#else
   const int c = dEdf.d.cols();
   for (int j = 0; j < c; ++j)
     for (unsigned k = 0; k < n; ++k)
       (*dEdxi).col(j+k) += (*dEdf).col(j);
-#endif
 }
 DYNET_NODE_INST_DEV_IMPL(KMHNGram)
 
 // ************* CircularCorrelation *************
-
-#ifndef __CUDACC__
-
 string CircularCorrelation::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "circ_corr(" << arg_names[0] << ", " << arg_names[1] << ')';
@@ -346,8 +297,6 @@ Dim CircularCorrelation::dim_forward(const vector<Dim>& xs) const {
                   "Bad input dimensions in CircularCorrelation: " << xs);
   return xs[0];
 }
-
-#endif
 
 namespace {
 // TODO these operations should be implemented using FFTs rather than the naive
@@ -384,16 +333,12 @@ void add_circular_correlation_naive(const T& a, const T& b, T& out) {
 
 template<class MyDevice>
 void CircularCorrelation::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("CircularCorrelation forward");
-#else
   auto a = **xs[0];
   auto b = **xs[1];
   auto y = *fx;
   const int d = a.rows();
   for (int i = 0; i < d; ++i) y(i, 0) = 0;
   add_circular_correlation_naive(a, b, y);
-#endif
 }
 
 template<class MyDevice>
@@ -403,9 +348,6 @@ void CircularCorrelation::backward_dev_impl(const MyDevice & dev,
                                             const Tensor& dEdf,
                                             unsigned i,
                                             Tensor& dEdxi) const {
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("CircularCorrelation backward");
-#else
   auto a = **xs[0];
   auto b = **xs[1];
   auto dr = *dEdf;
@@ -416,14 +358,10 @@ void CircularCorrelation::backward_dev_impl(const MyDevice & dev,
   } else {
     add_circular_convolution_naive(a, dr, out);
   }
-#endif
 }
 DYNET_NODE_INST_DEV_IMPL(CircularCorrelation)
 
 // ************* CircularConvolution *************
-
-#ifndef __CUDACC__
-
 string CircularConvolution::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "circ_conv(" << arg_names[0] << ", " << arg_names[1] << ')';
@@ -436,21 +374,15 @@ Dim CircularConvolution::dim_forward(const vector<Dim>& xs) const {
   return xs[0];
 }
 
-#endif
-
 template<class MyDevice>
 void CircularConvolution::forward_dev_impl(
     const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("CircularConvolution forward");
-#else
   auto a = **xs[0];
   auto b = **xs[1];
   auto y = *fx;
   const int d = a.rows();
   for (int i = 0; i < d; ++i) y(i, 0) = 0;
   add_circular_convolution_naive(a, b, y);
-#endif
 }
 
 template<class MyDevice>
@@ -460,9 +392,6 @@ void CircularConvolution::backward_dev_impl(const MyDevice & dev,
                                             const Tensor& dEdf,
                                             unsigned i,
                                             Tensor& dEdxi) const {
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("CircularConvolution backward");
-#else
   auto a = **xs[0];
   auto b = **xs[1];
   auto dr = *dEdf;
@@ -473,7 +402,6 @@ void CircularConvolution::backward_dev_impl(const MyDevice & dev,
   } else {
     add_circular_correlation_naive(a, dr, out);
   }
-#endif
 }
 DYNET_NODE_INST_DEV_IMPL(CircularConvolution)
 

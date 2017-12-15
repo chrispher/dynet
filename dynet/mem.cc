@@ -13,11 +13,6 @@
 #include <mm_malloc.h>
 #endif
 #include "dynet/except.h"
-#if HAVE_CUDA
-#include "dynet/cuda.h"
-#include <cuda.h>
-#include <cuda_runtime.h>
-#endif
 
 using namespace std;
 
@@ -63,28 +58,5 @@ void SharedAllocator::free(void* mem) {
 void SharedAllocator::zero(void* p, size_t n) {
   memset(p, 0, n);
 }
-
-#if HAVE_CUDA
-void* GPUAllocator::malloc(size_t n) {
-  void* ptr = nullptr;
-  CUDA_CHECK(cudaSetDevice(devid));
-  CUDA_CHECK(cudaMalloc(&ptr, n));
-  if (!ptr) {
-    cerr << "GPU memory allocation failed n=" << n << endl;
-    throw dynet::out_of_memory("GPU memory allocation failed");
-  }
-  return ptr;
-}
-
-void GPUAllocator::free(void* mem) {
-  CUDA_CHECK(cudaFree(mem));
-}
-
-void GPUAllocator::zero(void* p, size_t n) {
-  CUDA_CHECK(cudaSetDevice(devid));
-  CUDA_CHECK(cudaMemsetAsync(p, 0, n));
-}
-
-#endif
 
 } // namespace dynet

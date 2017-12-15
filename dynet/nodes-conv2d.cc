@@ -12,17 +12,9 @@
 #include "third_party/eigen_spatial_convolutions.h"
 #include "third_party/eigen_backward_spatial_convolutions.h"
 
-#if HAVE_CUDA
-#include "dynet/cuda.h"
-#include "dynet/gpu-ops.h"
-#include "dynet/cudnn-ops.h"
-#endif
-
 using namespace std;
 
 namespace dynet {
-
-#ifndef __CUDACC__
 
 string Conv2D::as_string(const vector<string>& arg_names) const {
   ostringstream s;
@@ -85,7 +77,6 @@ Dim Conv2D::dim_forward(const vector<Dim>& xs) const {
 //   return nbytes;
 //   // return 0;
 // }
-#endif
 
 template<class MyDevice>
 void Conv2D::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -93,15 +84,6 @@ void Conv2D::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>&
   DYNET_ASSERT(fx.d.bd == xs[0]->d.bd, "Failed dimension check in Conv2D::forward, batchsize not match");
   DYNET_ASSERT(fx.d[2] == xs[1]->d[3], "Failed dimension check in Conv2D::forward, #channel not match");
   AlignedMemoryPool* scratch_allocator = default_device->pools[(int)DeviceMempool::SCS];
-#ifdef __CUDACC__
-#if HAVE_CUDNN
-  if (cudnn_conv_op_ == NULL)
-    cudnn_conv_op_ = new CudnnConvOp(stride, is_valid);
-  cudnn_conv_op_->forward_impl(dev, xs, fx);
-#else
-  throw std::runtime_error("Conv2D::forward_dev_impl not supported without CUDNN");
-#endif
-#else
   Eigen::PaddingType padding_type = is_valid ? Eigen::PADDING_VALID : Eigen::PADDING_SAME;
   //void* CHWN_x_mem = aux_mem_pool.allocate(xs[0]->d.size() * sizeof(float));
   void* CHWN_x_mem = scratch_allocator->allocate(xs[0]->d.size() * sizeof(float));
@@ -127,7 +109,6 @@ void Conv2D::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>&
       fx.tb<3>().chip<2>(i).device(*dev.edevice) += bias.t<3>(); 
     }
   }
-#endif
   scratch_allocator->free();
 }
 
@@ -143,15 +124,6 @@ void Conv2D::backward_dev_impl(const MyDevice & dev,
   DYNET_ASSERT(dEdxi.d == xs[i]->d, "Failed dimension check in Conv2D::backward");
   DYNET_ASSERT(i <= 2, "Failed dimension check in Conv2D::backward");
   AlignedMemoryPool* scratch_allocator = default_device->pools[(int)DeviceMempool::SCS];
-#ifdef __CUDACC__
-#if HAVE_CUDNN
-  if (cudnn_conv_op_ == NULL)
-    cudnn_conv_op_ = new CudnnConvOp(stride, is_valid);
-  cudnn_conv_op_->backward_impl(dev, xs, fx, dEdf, i, dEdxi);
-#else
-  throw std::runtime_error("Conv2D::backward_dev_impl not supported without CUDNN");
-#endif
-#else
   //void* CHWN_dy_mem = aux_mem_pool.allocate(dEdf.d.size() * sizeof(float));
   void* CHWN_dy_mem = scratch_allocator->allocate(dEdf.d.size() * sizeof(float));
   Tensor CHWN_dy = Tensor(Dim({dEdf.d[2], dEdf.d[0], dEdf.d[1]}, dEdf.d.bd), static_cast<float*>(CHWN_dy_mem), dEdf.device, DeviceMempool::FXS);
@@ -194,7 +166,6 @@ void Conv2D::backward_dev_impl(const MyDevice & dev,
     Eigen::array<int, 3> red_axis = {0, 1, 3};
     dEdxi.t<1>().device(*dev.edevice) += dEdf.tb<3>().sum(red_axis);
   }
-#endif
   scratch_allocator->free();
 }
 DYNET_NODE_INST_DEV_IMPL(Conv2D)

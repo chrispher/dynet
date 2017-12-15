@@ -7,9 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Sum *************
-
-#ifndef __CUDACC__
-
 string Sum::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << arg_names[0];
@@ -58,8 +55,6 @@ std::vector<int> Sum::autobatch_concat(const ComputationGraph & cg) const {
   return ret;
 }
 
-#endif
-
 template<class MyDevice>
 void Sum::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   const unsigned num_args = xs.size();
@@ -91,20 +86,13 @@ void Sum::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs
     else {
       // Not all the same batch size, so need to broadcast in the cases where they differ
       TensorTools::zero(fx);
-#ifdef __CUDACC__
-      Eigen::array<int, 2> bcast({ 1, (int)fx.d.bd });
-#endif
       for (unsigned i = 0; i < num_args; ++i) {
         if (xs[i]->d.bd == fx.d.bd) {
           fx.tvec().device(*dev.edevice) += xs[i]->tvec();
         }
         else {
-#ifdef __CUDACC__
-          fx.tbvec().device(*dev.edevice) += xs[i]->tbvec().broadcast(bcast);
-#else
           for (unsigned b = 0; b < fx.d.bd; ++b)
             fx.tbvec().chip<1>(b).device(*dev.edevice) += xs[i]->tvec();
-#endif
         }
       }
     }
@@ -128,9 +116,6 @@ void Sum::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Sum)
 
 // ************* SumElements *************
-
-#ifndef __CUDACC__
-
 string SumElements::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "sum_elems( " << arg_names[0] << " )";
@@ -141,8 +126,6 @@ Dim SumElements::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in SumElements")
   return Dim({1}, xs[0].bd);
 }
-
-#endif
 
 template<class MyDevice>
 void SumElements::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -165,9 +148,6 @@ void SumElements::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(SumElements)
 
 // ************* SumDimension *************
-
-#ifndef __CUDACC__
-
 string SumDimension::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "sum_dim(expression=" << arg_names[0] << ',';
@@ -189,8 +169,6 @@ Dim SumDimension::dim_forward(const vector<Dim>& xs) const {
   ret.delete_dims(dims, include_batch_dim);
   return ret;
 }
-
-#endif
 
 template<class MyDevice>
 void SumDimension::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -247,9 +225,6 @@ void SumDimension::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(SumDimension)
 
 // ************* AddVectorToAllColumns *************
-
-#ifndef __CUDACC__
-
 string AddVectorToAllColumns::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   os << "colwise_add(" << arg_names[0] << ", " << arg_names[1] << ')';
@@ -265,23 +240,9 @@ Dim AddVectorToAllColumns::dim_forward(const vector<Dim>& xs) const {
   return Dim({xs[0][0], xs[0][1]}, max(xs[0].bd,xs[1].bd));
 }
 
-#endif
-
 template<class MyDevice>
 void AddVectorToAllColumns::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   // Broadcasting is slow on CPU, so split codepaths
-#ifdef __CUDACC__
-  if(xs[0]->d.bd >= xs[1]->d.bd) {
-    Eigen::array<int, 3> bcasts = {1, (int)xs[0]->d[1], (int)(xs[0]->d.bd/xs[1]->d.bd)};
-    fx.tb<2>().device(*dev.edevice) = xs[0]->tb<2>() + xs[1]->tb<2>().broadcast(bcasts);
-  } else {
-    DYNET_ASSERT(xs[0]->d.bd == 1,
-                 "Bad dimensions in AddVectorToAllColumns::forward: " << xs[0]->d << ", " << xs[1]->d);
-    Eigen::array<int, 3> bcasts0 = {1, 1, (int)xs[1]->d.bd};
-    Eigen::array<int, 3> bcasts1 = {1, (int)xs[0]->d[1], 1};
-    fx.tb<2>().device(*dev.edevice) = xs[0]->tb<2>().broadcast(bcasts0) + xs[1]->tb<2>().broadcast(bcasts1);
-  }
-#else
   // First, add the matrix
   if(xs[0]->d.bd == fx.d.bd)
     fx.tvec().device(*dev.edevice) = xs[0]->tvec();
@@ -297,7 +258,6 @@ void AddVectorToAllColumns::forward_dev_impl(const MyDevice & dev, const vector<
       for(size_t i = 0; i < fx.d[1]; ++i) 
         fx.tb<2>().chip<2>(b).chip<1>(i).device(*dev.edevice) += xs[1]->t<1>();
   }
-#endif
 }
 
 template<class MyDevice>

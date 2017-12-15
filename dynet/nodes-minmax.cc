@@ -8,9 +8,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Min *************
-
-#ifndef __CUDACC__
-
 string Min::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "min{" << arg_names[0] << ", " << arg_names[1] << "}";
@@ -25,8 +22,6 @@ Dim Min::dim_forward(const vector<Dim>& xs) const {
 size_t Min::aux_storage_size() const {
   return dim.size() * sizeof(float);
 }
-
-#endif
 
 template<class MyDevice>
 void Min::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -53,9 +48,6 @@ void Min::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Min)
 
 // ************* Max *************
-
-#ifndef __CUDACC__
-
 string Max::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "max{" << arg_names[0] << ", " << arg_names[1] << "}";
@@ -70,8 +62,6 @@ Dim Max::dim_forward(const vector<Dim>& xs) const {
 size_t Max::aux_storage_size() const {
   return dim.size() * sizeof(float);
 }
-
-#endif
 
 template<class MyDevice>
 void Max::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -98,9 +88,6 @@ void Max::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Max)
 
 // ************* MinDimension *************
-
-#ifndef __CUDACC__
-
 string MinDimension::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "min_dim(" << arg_names[0] << ", reduced_dim=" << reduced_dim << ')';
@@ -122,8 +109,6 @@ size_t MinDimension::aux_storage_size() const {
   return sizeof(Eigen::DenseIndex) * dim.size();
 }
 
-#endif
-
 template<class MyDevice>
 void MinDimension::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   Eigen::DenseIndex* minmap = static_cast<Eigen::DenseIndex*>(aux_mem);
@@ -144,13 +129,7 @@ void MinDimension::backward_dev_impl(const MyDevice & dev,
                              unsigned i,
                              Tensor& dEdxi) const {
   DYNET_ARG_CHECK(i == 0, "Failed dimension check in MinDimension::backward");
-#ifdef __CUDACC__
-  vector<Eigen::DenseIndex> indices(dim.size());
-  Eigen::DenseIndex* minmap = &indices[0];
-  CUDA_CHECK(cudaMemcpy((void*)minmap, aux_mem, sizeof(Eigen::DenseIndex) * dim.size(), cudaMemcpyDeviceToHost));
-#else
   Eigen::DenseIndex* minmap = static_cast<Eigen::DenseIndex*>(aux_mem);
-#endif
   const unsigned batch_size = dim.batch_elems();
   const unsigned first_dim_size = dim[0];
   const unsigned second_dim_size = dim[1];
@@ -174,9 +153,6 @@ void MinDimension::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(MinDimension)
 
 // ************* MaxDimension *************
-
-#ifndef __CUDACC__
-
 string MaxDimension::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "max_dim(" << arg_names[0] << ", reduced_dim=" << reduced_dim << ')';
@@ -198,8 +174,6 @@ size_t MaxDimension::aux_storage_size() const {
   return sizeof(Eigen::DenseIndex) * dim.size();
 }
 
-#endif
-
 template<class MyDevice>
 void MaxDimension::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   Eigen::DenseIndex* maxmap = static_cast<Eigen::DenseIndex*>(aux_mem);
@@ -220,13 +194,7 @@ void MaxDimension::backward_dev_impl(const MyDevice & dev,
                              unsigned i,
                              Tensor& dEdxi) const {
   DYNET_ARG_CHECK(i == 0, "Failed dimension check in MaxDimension::backward");
-#ifdef __CUDACC__
-  vector<Eigen::DenseIndex> indices(dim.size());
-  Eigen::DenseIndex* maxmap = &indices[0];
-  CUDA_CHECK(cudaMemcpy((void*)maxmap, aux_mem, sizeof(Eigen::DenseIndex) * dim.size(), cudaMemcpyDeviceToHost));
-#else
   Eigen::DenseIndex* maxmap = static_cast<Eigen::DenseIndex*>(aux_mem);
-#endif
   const unsigned batch_size = dim.batch_elems();
   const unsigned first_dim_size = dim[0];
   const unsigned second_dim_size = dim[1];

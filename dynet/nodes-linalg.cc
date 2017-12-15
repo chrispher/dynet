@@ -7,9 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Transpose *************
-
-#ifndef __CUDACC__
-
 string Transpose::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "transpose("<< arg_names[0] << ", ";
@@ -28,8 +25,6 @@ Dim Transpose::dim_forward(const vector<Dim>& xs) const {
     ret.d[i] = xs[0][dims[i]];
   return ret;
 }
-
-#endif
 
 template<class MyDevice>
 void Transpose::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -58,9 +53,6 @@ void Transpose::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Transpose)
 
 // ************* MatrixInverse *************
-
-#ifndef __CUDACC__
-
 string MatrixInverse::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "inverse(" << arg_names[0] << ")";
@@ -71,20 +63,14 @@ Dim MatrixInverse::dim_forward(const vector<Dim>& xs) const {
   return xs[0];
 }
 
-#endif
-
 template<class MyDevice>
 void MatrixInverse::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   DYNET_ASSERT(xs.size() == 1, "Failed dimension check in MatrixInverse::forward");
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("MatrixInverse forward");
-#else
   auto x = **xs[0];
   auto y = *fx;
   y = x.inverse();
   // TODO: Change into tensors after resolving test errors
   //fx.t<2>().device(*dev.edevice) = xs[0]->t<2>().inverse();
-#endif
 }
 
 template<class MyDevice>
@@ -95,20 +81,13 @@ void MatrixInverse::backward_dev_impl(const MyDevice & dev,
                              unsigned i,
                              Tensor& dEdxi) const {
   DYNET_ASSERT(xs.size() == 1, "Failed dimension check in MatrixInverse::backward");
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("MatrixInverse backward");
-#else
   auto d = *dEdf;
   auto y = *fx;
   (*dEdxi).noalias() -= y.transpose() * d * y.transpose();
-#endif
 }
 DYNET_NODE_INST_DEV_IMPL(MatrixInverse)
 
 // ************* LogDet *************
-
-#ifndef __CUDACC__
-
 string LogDet::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "logdet(" << arg_names[0] << ")";
@@ -148,15 +127,9 @@ inline typename MatrixType::Scalar logdet(const MatrixType& M, bool use_cholesky
   return ld;
 }
 
-#endif
-
 template<class MyDevice>
 void LogDet::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("LogDet forward");
-#else
   fx.v[0] = logdet(**xs[0], false);
-#endif
 }
 
 template<class MyDevice>
@@ -166,19 +139,12 @@ void LogDet::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("LogDet backward");
-#else
   auto trans = (**xs[0]).transpose();
   (*dEdxi) += (dEdf.v[0]) * trans.inverse();
-#endif
 }
 DYNET_NODE_INST_DEV_IMPL(LogDet)
 
 // ************* TraceOfProduct *************
-
-#ifndef __CUDACC__
-
 string TraceOfProduct::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "Tr(" << arg_names[0] << " * " << arg_names[1] << "^T)";
@@ -190,17 +156,11 @@ Dim TraceOfProduct::dim_forward(const vector<Dim>& xs) const {
   return Dim({1}, max(xs[0].bd, xs[1].bd));
 }
 
-#endif
-
 template<class MyDevice>
 void TraceOfProduct::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("TraceOfProduct forward");
-#else
   auto x1 = **xs[0];
   auto x2 = **xs[1];
   fx.v[0] = (x1 * x2.transpose()).trace();
-#endif
 }
 
 template<class MyDevice>
@@ -211,13 +171,9 @@ void TraceOfProduct::backward_dev_impl(const MyDevice & dev,
                              unsigned i,
                              Tensor& dEdxi) const {
   DYNET_ARG_CHECK(i < 2, "Failed dimension check in TraceOfProduce::backward");
-#ifdef __CUDACC__
-  DYNET_NO_CUDA_IMPL_ERROR("TraceOfProduct backward");
-#else
   const float d = dEdf.v[0];
   auto xother = **xs[1 - i];
   *dEdxi += d * xother;
-#endif
 }
 DYNET_NODE_INST_DEV_IMPL(TraceOfProduct)
 

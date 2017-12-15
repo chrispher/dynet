@@ -752,7 +752,7 @@ struct Node {
                             number of bytes you need from aux_storage_size().
                             Note: this memory will be on the CPU or GPU,
                             depending on your computation backend*/
-  bool has_cuda_implemented = true;
+  bool has_cuda_implemented = false;
 };
 
 
@@ -766,8 +766,6 @@ inline VariableIndex ComputationGraph::add_function_node(Node *node) {
       node->device = dynet::default_device;
     }
   }
-  if (node->device->type == DeviceType::GPU && !node->has_cuda_implemented)
-    DYNET_NO_CUDA_IMPL_ERROR(node->as_dummy_string())
   set_dim_for_new_node(new_node_index);
   return new_node_index;
 }

@@ -1,33 +1,15 @@
 #include "dynet/training.h"
 
-// #include "dynet/gpu-ops.h"
 #include "dynet/param-nodes.h"
 #include "dynet/weight-decay.h"
 
 // Macros for defining parameter update functions
-#ifdef __CUDACC__
-#define DYNET_TRAINER_INST_DEV_IMPL(MyTrainer) \
-  template void MyTrainer::update_rule_dev<Device_GPU>(const Device_GPU & dev, real gscale, const std::vector<Tensor*> & values);
-#elif defined(HAVE_CUDA)
-// This is correct, but dying when models are read and written.
-#define DYNET_TRAINER_INST_DEV_IMPL(MyTrainer) \
-  extern template void MyTrainer::update_rule_dev<Device_GPU>(const Device_GPU & dev, real gscale, const std::vector<Tensor*> & values); \
-  template void MyTrainer::update_rule_dev<Device_CPU>(const Device_CPU & dev, real gscale, const std::vector<Tensor*> & values); \
-  void MyTrainer::update_rule(real gscale, const std::vector<Tensor*> & values) { \
-    if(values[0]->device->type == DeviceType::CPU) { update_rule_dev(*(Device_CPU*)values[0]->device,gscale,values); } \
-    else if(values[0]->device->type == DeviceType::GPU) { \
-      cudaSetDevice(((Device_GPU*)values[0]->device)->cuda_device_id); \
-      update_rule_dev(*(Device_GPU*)values[0]->device,gscale,values); } \
-    else { throw std::runtime_error("Bad device in MyTrainer::update_rule"); } \
-  }
-#else
 #define DYNET_TRAINER_INST_DEV_IMPL(MyTrainer) \
   template void MyTrainer::update_rule_dev<Device_CPU>(const Device_CPU & dev, real gscale, const std::vector<Tensor*> & values); \
   void MyTrainer::update_rule(real gscale, const std::vector<Tensor*> & values) { \
     if(values[0]->device->type == DeviceType::CPU) { update_rule_dev(*(Device_CPU*)values[0]->device,gscale,values); } \
     else { throw std::runtime_error("Bad device in MyTrainer::update_rule"); } \
   }
-#endif
 
 namespace dynet {
 
@@ -41,8 +23,6 @@ bool is_valid(const Eigen::MatrixBase<Derived>& x) {
 // --- The actual update code for each operation, implemented on various devices
 
 // Trainer base class is run on CPUs
-#ifndef __CUDACC__
-
 Trainer::~Trainer() {}
 
 void Trainer::rescale_and_reset_weight_decay() {
@@ -123,8 +103,6 @@ void Trainer::restart(real lr) {
 }
 
 
-#endif
-
 // --- SimpleSGDTrainer
 
 // Perform update of ts[0]=parameters, ts[1]=gradients
@@ -134,7 +112,6 @@ void SimpleSGDTrainer::update_rule_dev(const MyDevice & dev, real gscale, const 
 }
 DYNET_TRAINER_INST_DEV_IMPL(SimpleSGDTrainer)
 
-#ifndef __CUDACC__
 void SimpleSGDTrainer::update_params(real gscale, size_t idx) {
   auto & p = model->parameters_list()[idx];
   update_rule(gscale, {&p->values, &p->g});
@@ -147,7 +124,6 @@ void SimpleSGDTrainer::update_lookup_params(real gscale, size_t idx) {
   auto & p = model->lookup_parameters_list()[idx];
   update_rule(gscale, {&p->all_values, &p->all_grads});
 }
-#endif
 
 // --- CyclicalSGDTrainer
 
@@ -158,7 +134,6 @@ void CyclicalSGDTrainer::update_rule_dev(const MyDevice & dev, real gscale, cons
 }
 DYNET_TRAINER_INST_DEV_IMPL(CyclicalSGDTrainer)
 
-#ifndef __CUDACC__
 void CyclicalSGDTrainer::update_params(real gscale, size_t idx) {
   auto & p = model->parameters_list()[idx];
   update_rule(gscale, {&p->values, &p->g});
@@ -171,7 +146,6 @@ void CyclicalSGDTrainer::update_lookup_params(real gscale, size_t idx) {
   auto & p = model->lookup_parameters_list()[idx];
   update_rule(gscale, {&p->all_values, &p->all_grads});
 }
-#endif
 
 // --- MomentumSGDTrainer
 
@@ -183,7 +157,6 @@ void MomentumSGDTrainer::update_rule_dev(const MyDevice & dev, real gscale, cons
 }
 DYNET_TRAINER_INST_DEV_IMPL(MomentumSGDTrainer)
 
-#ifndef __CUDACC__
 void MomentumSGDTrainer::update_params(real gscale, size_t idx) {
   auto & p = model->parameters_list()[idx];
   update_rule(gscale, {&p->values, &p->g, &vp[idx].h});
@@ -212,8 +185,6 @@ void MomentumSGDTrainer::restart() {
     TensorTools::zero(slp.all_h);
 }
 
-#endif
-
 // --- AdagradTrainer
 
 // Perform update of ts[0]=parameters, ts[1]=gradients, ts[2]=stddev
@@ -225,7 +196,6 @@ void AdagradTrainer::update_rule_dev(const MyDevice & dev, real gscale, const st
 }
 DYNET_TRAINER_INST_DEV_IMPL(AdagradTrainer)
 
-#ifndef __CUDACC__
 void AdagradTrainer::update_params(real gscale, size_t idx) {
   auto & p = model->parameters_list()[idx];
   update_rule(gscale, {&p->values, &p->g, &vp[idx].h});
@@ -254,8 +224,6 @@ void AdagradTrainer::restart() {
     TensorTools::zero(slp.all_h);
 }
 
-#endif
-
 // --- AdadeltaTrainer
 
 // Perform update of ts[0]=parameters, ts[1]=gradients, ts[2]=hg, ts[3]=hd
@@ -269,7 +237,6 @@ void AdadeltaTrainer::update_rule_dev(const MyDevice & dev, real gscale, const s
 }
 DYNET_TRAINER_INST_DEV_IMPL(AdadeltaTrainer)
 
-#ifndef __CUDACC__
 void AdadeltaTrainer::update_params(real gscale, size_t idx) {
   auto & p = model->parameters_list()[idx];
   update_rule(gscale, {&p->values, &p->g, &hg[idx].h, &hd[idx].h});
@@ -304,8 +271,6 @@ void AdadeltaTrainer::restart() {
     TensorTools::zero(slp.all_h);
 }
 
-#endif
-
 // --- RMSPropTrainer
 // TODO: This is not finished yet, because it memorizes a scalar for each set of parameters, not each parameter itself.
 //       We could implement this with one tensor for each scalar, but this is pretty wasteful
@@ -324,7 +289,6 @@ void RMSPropTrainer::update_rule_dev(const MyDevice & dev, real gscale, const st
 }
 DYNET_TRAINER_INST_DEV_IMPL(RMSPropTrainer)
 
-#ifndef __CUDACC__
 void RMSPropTrainer::update_params(real gscale, size_t idx) {
   auto & p = model->parameters_list()[idx];
   update_rule(gscale, {&p->values, &p->g, &hmsg[idx].h});
@@ -353,8 +317,6 @@ void RMSPropTrainer::restart() {
     TensorTools::zero(slp.all_h);
 }
 
-#endif
-
 // --- AdamTrainer
 
 // Perform update of ts[0]=parameters, ts[1]=gradients, ts[2]=mean, ts[3]=variance
@@ -368,7 +330,6 @@ void AdamTrainer::update_rule_dev(const MyDevice & dev, real gscale, const std::
 }
 DYNET_TRAINER_INST_DEV_IMPL(AdamTrainer)
 
-#ifndef __CUDACC__
 void AdamTrainer::update_params(real gscale, size_t idx) {
   auto & p = model->parameters_list()[idx];
   update_rule(gscale, {&p->values, &p->g, &m[idx].h, &v[idx].h});
@@ -403,8 +364,6 @@ void AdamTrainer::restart() {
     TensorTools::zero(slp.all_h);
 }
 
-#endif
-
 // --- EGTrainer
 template <class MyDevice>
 void EGTrainer::update_rule_dev(const MyDevice & dev, real gscale, const std::vector<Tensor*> & ts) {
@@ -416,7 +375,6 @@ void EGTrainer::update_rule_dev(const MyDevice & dev, real gscale, const std::ve
 }
 DYNET_TRAINER_INST_DEV_IMPL(EGTrainer)
 
-#ifndef __CUDACC__
 void EGTrainer::update_params(real gscale, size_t idx) {
   auto & p = model->parameters_list()[idx];
   update_rule(gscale, {&p->values, &p->g, &hp[idx].h, &meg, &zeg});
@@ -444,7 +402,4 @@ void EGTrainer::restart() {
   for (auto slp : hlp)
     TensorTools::zero(slp.all_h);
 }
-
-#endif
-
 } // namespace dynet

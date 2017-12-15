@@ -7,9 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Hinge *************
-
-#ifndef __CUDACC__
-
 string Hinge::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   if(pelement != nullptr)
@@ -30,8 +27,6 @@ size_t Hinge::aux_storage_size() const {
   DYNET_ASSERT(input_size != 0, "We should not have an input size of zero in Hinge::aux_storage_size()");
   return input_size * sizeof(float);
 }
-
-#endif
 
 template<class MyDevice>
 void Hinge::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -76,9 +71,6 @@ void Hinge::backward_dev_impl(const MyDevice & dev,
       Tensor eloss(xs[0]->d, static_cast<float*>(aux_mem), fx.device, DeviceMempool::FXS);
       // TODO: The > comparison should not be calculated twice. Keep it in auxiliary memory?
       dEdxi.tvec().device(*dev.edevice) += (eloss.tvec() > 0.f).cast<float>() * d;
-#if defined(__CUDACC__) && defined(EIGEN_NO_MALLOC)
-      DYNET_RUNTIME_ERR("CUDA memory allocation in hinge");
-#endif
       dEdxi.tvec().chip<0>(*pelement).device(*dev.edevice) -= (eloss.tvec() > 0.f).template cast<float>().sum() * d;
     }
   } else {
@@ -89,9 +81,6 @@ void Hinge::backward_dev_impl(const MyDevice & dev,
     for(size_t b = 0; b < fx.d.bd; b++) {
       if(fx_vec[b]) { // there was some loss
         dEdxi.tb<1>().chip<1>(b).device(*dev.edevice) += (eloss.tb<1>().chip<1>(b) > 0.f).cast<float>() * d_vec[b];
-#if defined(__CUDACC__) && defined(EIGEN_NO_MALLOC)
-        DYNET_RUNTIME_ERR("CUDA memory allocation in hinge");
-#endif
         dEdxi.tb<1>().chip<1>(b).chip<0>((*pelements)[b]).device(*dev.edevice) -= (eloss.tb<1>().chip<1>(b) > 0.f).template cast<float>().sum() * d_vec[b];
       }
     }
@@ -100,9 +89,6 @@ void Hinge::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Hinge)
 
 // ************* HingeDim *************
-
-#ifndef __CUDACC__
-
 string HingeDim::as_string(const vector<string>& arg_names) const {
   ostringstream os;
   if(pelement != nullptr)
@@ -122,8 +108,6 @@ size_t HingeDim::aux_storage_size() const {
   return input_size * sizeof(float);
 }
 
-#endif
-
 template<class MyDevice>
 void HingeDim::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   DYNET_ASSERT(xs.size() == 1, "Failed dimension check in HingeDim::forward");
@@ -136,8 +120,6 @@ void HingeDim::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*
                           "The list of indexes passed to HingeDim has a length (" << pelements->size() <<
                           ") that doesn't match the number of mini-batch elements in the corresponding expression (" << xs[0]->d << ")");
   size_t batch_size = xs[0]->d.batch_size(), col_size = xs[0]->d.rows(), scan_size = xs[0]->d[d^1], scan_id = 0;
-  // TODO: This will be very slow on GPU due to the one-by-one operations, and not super-fast on CPU either due to the broadcast.
-  //       We should write a CUDA kernel and do alternative code paths.
   for(size_t b = 0; b < fx.d.bd; ++b, ++scan_id) {
     size_t my_scan = (pelement != nullptr ? (*pelement) : (*pelements)[b]).size();
     DYNET_ARG_CHECK(my_scan == scan_size, "IDs passed to HingeDim must be same size as # of " << 

@@ -13,19 +13,6 @@ class out_of_memory : public std::runtime_error {
   out_of_memory(const std::string& what_arg) : runtime_error(what_arg) {}
 };
 
-// this error occurs when some logic is
-// attempted to execut on a CUDA backend but the
-// logic has not been implemented.
-class cuda_not_implemented : public std::logic_error {
- public:
-  cuda_not_implemented(const std::string& what_arg) : logic_error(what_arg) {}
-};
-
-// this is thrown when cuda returns an error (bad arguments, memory, state, etc)
-class cuda_exception : public std::runtime_error {
- public:
-  cuda_exception(const std::string& what_arg) : runtime_error(what_arg) {}
-};
 } // namespace dynet
 
 #ifdef DYNET_SKIP_ARG_CHECK
@@ -61,12 +48,6 @@ class cuda_exception : public std::runtime_error {
     std::ostringstream oss;                     \
     oss << msg;                                 \
     throw std::runtime_error(oss.str()); }      \
-  while (0);
-
-#define DYNET_NO_CUDA_IMPL_ERROR(op) do {															                                               \
-    std::ostringstream oss;                                                                                          \
-    oss << op << " not implemented for CUDA yet. You can use CPU implementation with to_device operation instead.";  \
-    throw std::runtime_error(oss.str()); }                                                                           \
   while (0);
 
 #endif

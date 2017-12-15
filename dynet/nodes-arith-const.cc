@@ -10,8 +10,6 @@ namespace dynet {
 
 // ************* ConstantMinusX *************
 
-#ifndef __CUDACC__
-
 string ConstantMinusX::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << c << " - " << arg_names[0];
@@ -22,8 +20,6 @@ Dim ConstantMinusX::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in ConstantMinusX")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void ConstantMinusX::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -43,8 +39,6 @@ DYNET_NODE_INST_DEV_IMPL(ConstantMinusX)
 
 // ************* ConstantPlusX *************
 
-#ifndef __CUDACC__
-
 string ConstantPlusX::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << c << " + " << arg_names[0];
@@ -55,8 +49,6 @@ Dim ConstantPlusX::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in ConstantPlusX")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void ConstantPlusX::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -76,8 +68,6 @@ DYNET_NODE_INST_DEV_IMPL(ConstantPlusX)
 
 // ************* ConstScalarMultiply *************
 
-#ifndef __CUDACC__
-
 string ConstScalarMultiply::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << arg_names[0] << " * " << alpha;
@@ -88,8 +78,6 @@ Dim ConstScalarMultiply::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "ConstScalarMultiply expects one argument: " << xs);
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void ConstScalarMultiply::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {

@@ -1,17 +1,13 @@
-#ifndef DYNET_GPU_FUNCTORS_H
-#define DYNET_GPU_FUNCTORS_H
+#ifndef DYNET_FUNCTORS_H
+#define DYNET_FUNCTORS_H
 
 #include <cstdint>
 #include <cmath>
 #include <limits>
 
-#if HAVE_CUDA
-#  define DYNET_DEVICE_FUNC __device__
-#  define DYNET_DEVICE_MIN 1.175494351e-38f
-#else
-#  define DYNET_DEVICE_FUNC
-#  define DYNET_DEVICE_MIN std::numeric_limits<float>::min()
-#endif
+
+#define DYNET_DEVICE_FUNC
+#define DYNET_DEVICE_MIN std::numeric_limits<float>::min()
 
 // these functions are used both in CPU and in GPU computation
 // this file may be compiled with NVCC or a standard C++ tool.

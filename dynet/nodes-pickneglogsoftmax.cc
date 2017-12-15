@@ -2,19 +2,12 @@
 
 #include "dynet/nodes-macros.h"
 
-#ifdef __CUDACC__
-#include "dynet/cuda.h"
-#include "dynet/gpu-ops.h"
-#endif
 
 using namespace std;
 
 namespace dynet {
 
 // ************* PickNegLogSoftmax *************
-
-#ifndef __CUDACC__
-
 string PickNegLogSoftmax::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   if(pval) {
@@ -72,19 +65,13 @@ size_t PickNegLogSoftmax::aux_storage_size() const {
   return 2 * dim.batch_elems() * sizeof(float) + dim.batch_elems() * sizeof(unsigned int);
 }
 
-#endif
-
 template<class MyDevice>
 void PickNegLogSoftmax::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
   if (xs[0]->d.cols() == 1) {
     Tensor z(Dim({1},fx.d.bd), (float*)aux_mem, fx.device, DeviceMempool::FXS);
     Tensor m(Dim({1},fx.d.bd), (float*)aux_mem + fx.d.bd, fx.device, DeviceMempool::FXS);
     unsigned int *ids_dev = (unsigned int*)((float*)aux_mem + 2*fx.d.bd), *ids_host;
-#ifdef __CUDACC__
-    ids_host = (unsigned int*)malloc(fx.d.bd * sizeof(unsigned int));
-#else
     ids_host = ids_dev;
-#endif
     if(pval) {
       *ids_host = *pval;
       DYNET_ARG_CHECK(*pval < xs[0]->d.rows(),
@@ -101,16 +88,9 @@ void PickNegLogSoftmax::forward_dev_impl(const MyDevice & dev, const vector<cons
         ids_host[b] = batch_size * b + (*pvals)[b];
       }
     }
-#ifdef __CUDACC__
-    CUDA_CHECK(cudaMemcpyAsync(ids_dev, ids_host, fx.d.bd * sizeof(unsigned int), cudaMemcpyHostToDevice));
-    TensorTools::logsumexp_dev(dev, *xs[0], m, z);
-    dynet::gpu::sparse_to_dense_assign(fx.d.bd, ids_dev, xs[0]->v, fx.v);
-    free(ids_host);
-#else
     TensorTools::logsumexp_dev(dev, *xs[0], m, z);
     for(unsigned b = 0; b < fx.d.bd; ++b)
       fx.v[b] = xs[0]->v[ids_dev[b]];
-#endif
     fx.tvec().device(*dev.edevice) = z.tvec() - fx.tvec();
   } else {
     DYNET_RUNTIME_ERR("PickNegLogSoftmax::forward not yet implemented for multiple columns");
@@ -127,17 +107,11 @@ void PickNegLogSoftmax::backward_dev_impl(const MyDevice & dev,
   if (xs[0]->d.cols() == 1) {
     Tensor z(Dim({1},fx.d.batch_elems()), (float*)aux_mem, fx.device, DeviceMempool::FXS);
     unsigned int *ids_dev = (unsigned int*)((float*)aux_mem + 2*fx.d.bd);
-#ifdef __CUDACC__ 
-    Eigen::array<int, 2> bcast({(int)xs[0]->d[0],1});
-    dEdxi.tb<1>().device(*dev.edevice) += (xs[0]->tb<1>() - z.tb<1>().broadcast(bcast)).exp() * dEdf.tb<1>().broadcast(bcast);
-    dynet::gpu::dense_to_sparse_subtract(fx.d.bd, ids_dev, dEdf.v, dEdxi.v);
-#else
     // TODO: We want to do broadcasting here too, but it's slow
     for(unsigned b = 0; b < fx.d.bd; ++b) {
       dEdxi.tb<1>().chip<1>(b).device(*dev.edevice) += (xs[0]->tb<1>().chip<1>(b) - z.v[b]).exp() * dEdf.v[b];
       dEdxi.v[ids_dev[b]] -= dEdf.v[b];
     }
-#endif
   } else {
     DYNET_RUNTIME_ERR("PickNegLogSoftmax::backward not yet implemented for multiple columns");
   }

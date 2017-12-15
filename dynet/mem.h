@@ -37,16 +37,6 @@ struct SharedAllocator : public MemAllocator {
   void zero(void* p, std::size_t n) override;
 };
 
-#if HAVE_CUDA
-struct GPUAllocator : public MemAllocator {
-  explicit GPUAllocator(int devid) : MemAllocator(256), devid(devid) {}
-  void* malloc(std::size_t n) override;
-  void free(void* mem) override;
-  void zero(void* p, std::size_t n) override;
-  const int devid;
-};
-#endif
-
 } // namespace dynet
 
 #endif

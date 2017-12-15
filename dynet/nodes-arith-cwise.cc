@@ -7,8 +7,6 @@ using namespace std;
 namespace dynet {
 
 // ************* CwiseSum*************
-#ifndef __CUDACC__
-
 string CwiseSum::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << arg_names[0];
@@ -32,9 +30,6 @@ Dim CwiseSum::dim_forward(const vector<Dim>& xs) const {
   Dim d(dims, max(xs[0].bd, xs[1].bd));
   return d;
 }
-
-#endif
-
 
 template<class MyDevice>
 void CwiseSum::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -61,18 +56,6 @@ void CwiseSum::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*
   bool same_batch_dims = xs[0]->d.bd==xs[1]->d.bd;
   if(same_nonbatch_dims && same_batch_dims){
     fx.tb<4>().device(*dev.edevice) = xs[0]->tb<4>() + xs[1]->tb<4>();
-#ifndef __CUDACC__
-  } else if(same_nonbatch_dims){
-    TensorTools::zero(fx);
-    for (unsigned i = 0; i < xs.size(); ++i) {
-      if (xs[i]->d.bd == fx.d.bd) {
-        fx.tvec().device(*dev.edevice) += xs[i]->tvec();
-      } else {
-        for (unsigned b = 0; b < fx.d.bd; ++b)
-          fx.tbvec().chip<1>(b).device(*dev.edevice) += xs[i]->tvec();
-      }
-    }
-#endif
   } else {
     fx.tb<4>().device(*dev.edevice) = xs[0]->tb<4>().broadcast(bcast_left) + xs[1]->tb<4>().broadcast(bcast_right);
   }
@@ -87,11 +70,6 @@ void CwiseSum::backward_dev_impl(const MyDevice & dev,
                              Tensor& dEdxi) const {
   if(dEdf.d == dEdxi.d) {
     dEdxi.tvec().device(*dev.edevice) += dEdf.tvec();
-#ifndef __CUDACC__
-  } else if (dEdf.d.single_batch() == dEdxi.d.single_batch()) {
-    for(size_t i = 0; i < dEdf.d.bd; ++i)
-      dEdxi.tvec().device(*dev.edevice) += dEdf.tbvec().chip<1>(i);
-#endif
   } else {
     int n_red = xs[i]->d.bd!=fx.d.bd?1:0;
     for(unsigned int j = 0; j < fx.d.nd; j++){
@@ -136,9 +114,6 @@ void CwiseSum::backward_helper(const MyDevice & dev,
 }
 
 // ************* CwiseMultiply *************
-
-#ifndef __CUDACC__
-
 string CwiseMultiply::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << arg_names[0] << " \\cdot " << arg_names[1];
@@ -170,8 +145,6 @@ int CwiseMultiply::autobatch_sig(const ComputationGraph & cg, SigMap &sm) const 
 std::vector<int> CwiseMultiply::autobatch_concat(const ComputationGraph & cg) const {
   return vector<int>(2, 1);
 }
-
-#endif
 
 template<class MyDevice>
 void CwiseMultiply::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -263,9 +236,6 @@ void CwiseMultiply::backward_helper(const MyDevice & dev,
 }
 
 // ************* CwiseQuotient *************
-
-#ifndef __CUDACC__
-
 string CwiseQuotient::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << arg_names[0] << " / " << arg_names[1];
@@ -287,9 +257,6 @@ Dim CwiseQuotient::dim_forward(const vector<Dim>& xs) const {
   Dim d(dims, max(xs[0].bd, xs[1].bd));
   return d;
 }
-
-
-#endif
 
 template<class MyDevice>
 void CwiseQuotient::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -377,9 +344,6 @@ void CwiseQuotient::backward_helper(const MyDevice & dev,
 }
 
 // ************* Pow *************
-
-#ifndef __CUDACC__
-
 string Pow::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << arg_names[0] << " ** " << arg_names[1];
@@ -392,8 +356,6 @@ Dim Pow::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs[1].truncate().single_batch().size() == 1, "Bad input dimensions in Pow: " << xs);
   return d;
 }
-
-#endif
 
 template<class MyDevice>
 void Pow::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -413,9 +375,6 @@ void Pow::backward_dev_impl(const MyDevice & dev,
   if (i == 0) {
     dEdxi.tvec().device(*dev.edevice) += xs[0]->tvec().pow(x2 - 1) * dEdf.tvec() * x2;
   } else {
-#if defined(__CUDACC__) && defined(EIGEN_NO_MALLOC)
-    DYNET_RUNTIME_ERR("CUDA memory allocation in Pow");
-#endif
     // y = a^x
     // dy/dx = a^x * log(a)
     dEdxi.t<0>().device(*dev.edevice) += (fx.tvec() * xs[0]->tvec().log() * dEdf.tvec()).sum();

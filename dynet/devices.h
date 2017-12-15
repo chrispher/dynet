@@ -5,18 +5,15 @@
 #include <string>
 #include <exception>
 #include "dynet/aligned-mem-pool.h"
-#include "dynet/cuda.h"
 #include "dynet/globals.h"
 
 namespace Eigen {
   struct DefaultDevice;
-  class CudaStreamDevice;
-  struct GpuDevice;
 }
 
 namespace dynet {
 
-enum class DeviceType {CPU, GPU};
+enum class DeviceType {CPU};
 
 /*
  * FXS   -> forward pass memory
@@ -58,23 +55,6 @@ class Device {
   void allocate_tensor(DeviceMempool mem_pool, Tensor & tensor);
   std::vector<AlignedMemoryPool*> pools;
 };
-
-#if HAVE_CUDA
-class Device_GPU : public Device {
- public:
-  typedef Eigen::CudaStreamDevice EigenDevice;
-  explicit Device_GPU(int my_id, const DeviceMempoolSizes & mb, int device_id);
-  ~Device_GPU();
-  int cuda_device_id;
-  cublasHandle_t cublas_handle;
-#if HAVE_CUDNN
-  cudnnHandle_t cudnnHandle;
-#endif
-  Eigen::GpuDevice* edevice;
-  Eigen::CudaStreamDevice* estream;
-  GPUAllocator gpu_mem;
-};
-#endif
 
 class Device_CPU : public Device {
  public:

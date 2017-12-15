@@ -8,9 +8,6 @@ using namespace std;
 namespace dynet {
 
 // ************* Sin *************
-
-#ifndef __CUDACC__
-
 string Sin::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "sin(" << arg_names[0] << ')';
@@ -21,8 +18,6 @@ Dim Sin::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Sin")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Sin::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -44,9 +39,6 @@ void Sin::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Sin)
 
 // ************* Cos *************
-
-#ifndef __CUDACC__
-
 string Cos::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "cos(" << arg_names[0] << ')';
@@ -57,8 +49,6 @@ Dim Cos::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Sin")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Cos::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -80,9 +70,6 @@ void Cos::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Cos)
 
 // ************* Tan *************
-
-#ifndef __CUDACC__
-
 string Tan::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "tan(" << arg_names[0] << ')';
@@ -93,8 +80,6 @@ Dim Tan::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Tan")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Tan::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -115,9 +100,6 @@ void Tan::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Tan)
 
 // ************* Asin *************
-
-#ifndef __CUDACC__
-
 string Asin::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "asin(" << arg_names[0] << ')';
@@ -128,8 +110,6 @@ Dim Asin::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Asin")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Asin::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -150,9 +130,6 @@ void Asin::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Asin)
 
 // ************* Acos *************
-
-#ifndef __CUDACC__
-
 string Acos::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "acos(" << arg_names[0] << ')';
@@ -163,8 +140,6 @@ Dim Acos::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Acos")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Acos::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -185,9 +160,6 @@ void Acos::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Acos)
 
 // ************* Atan *************
-
-#ifndef __CUDACC__
-
 string Atan::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "atan(" << arg_names[0] << ')';
@@ -198,8 +170,6 @@ Dim Atan::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Atan")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Atan::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -220,9 +190,6 @@ void Atan::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Atan)
 
 // ************* Sinh *************
-
-#ifndef __CUDACC__
-
 string Sinh::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "sinh(" << arg_names[0] << ')';
@@ -233,8 +200,6 @@ Dim Sinh::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Sinh")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Sinh::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -256,9 +221,6 @@ void Sinh::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Sinh)
 
 // ************* Cosh *************
-
-#ifndef __CUDACC__
-
 string Cosh::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "cosh(" << arg_names[0] << ')';
@@ -269,8 +231,6 @@ Dim Cosh::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Cosh")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Cosh::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -292,9 +252,6 @@ void Cosh::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Cosh)
 
 // ************* Tanh *************
-
-#ifndef __CUDACC__
-
 string Tanh::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "tanh(" << arg_names[0] << ')';
@@ -305,8 +262,6 @@ Dim Tanh::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Tanh")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Tanh::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -326,9 +281,6 @@ void Tanh::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Tanh)
 
 // ************* Asinh *************
-
-#ifndef __CUDACC__
-
 string Asinh::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "asinh(" << arg_names[0] << ')';
@@ -339,8 +291,6 @@ Dim Asinh::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Asinh")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Asinh::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -361,9 +311,6 @@ void Asinh::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Asinh)
 
 // ************* Acosh *************
-
-#ifndef __CUDACC__
-
 string Acosh::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "acosh(" << arg_names[0] << ')';
@@ -374,8 +321,6 @@ Dim Acosh::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Acosh")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Acosh::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
@@ -396,9 +341,6 @@ void Acosh::backward_dev_impl(const MyDevice & dev,
 DYNET_NODE_INST_DEV_IMPL(Acosh)
 
 // ************* Atanh *************
-
-#ifndef __CUDACC__
-
 string Atanh::as_string(const vector<string>& arg_names) const {
   ostringstream s;
   s << "atanh(" << arg_names[0] << ')';
@@ -409,8 +351,6 @@ Dim Atanh::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Atanh")
   return xs[0];
 }
-
-#endif
 
 template<class MyDevice>
 void Atanh::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
